@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"syscall"
+	"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -68,22 +67,6 @@ func (a *app) setup() {
 		}
 	})
 
-	edit := func(path string) {
-		abs, _ := filepath.Abs(path)
-		cmd := exec.Command(os.Getenv("EDITOR"), abs)
-		cmd.Env = os.Environ()
-		cmd.Stdin = nil
-		cmd.Stdout = nil
-		cmd.Stderr = nil
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setsid: true,
-		}
-		if err := cmd.Start(); err != nil {
-			panic(err)
-		}
-		a.cmd.SetText(fmt.Sprintf("%d", cmd.Process.Pid))
-	}
-
 	a.tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		reference := node.GetReference()
 		if reference == nil {
@@ -101,7 +84,11 @@ func (a *app) setup() {
 					a.cnode = node
 					return
 				}
-				edit(nr.path)
+				if res, err := RunEdict("edit", nr.path); err != nil {
+					a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
+				} else {
+					a.cmd.SetText(fmt.Sprintf("edit %s", res))
+				}
 			}
 		} else {
 			// Collapse if visible, expand if collapsed.
@@ -118,6 +105,10 @@ func (a *app) setup() {
 
 	a.tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		a.lastKeyPress = event.When()
+		if event.Key() == tcell.KeyTab {
+			a.SetFocus(a.cmd)
+			return nil
+		}
 		return event
 	})
 
@@ -132,11 +123,51 @@ func (a *app) setup() {
 
 	a.tree.SetRoot(a.rootNode)
 
+	a.cmd.SetDoneFunc(func(key tcell.Key) {
+		switch key {
+		case tcell.KeyEscape:
+			a.cmd.SetText("")
+			a.SetFocus(a.tree)
+		case tcell.KeyBacktab:
+			a.SetFocus(a.tree)
+		case tcell.KeyEnter:
+			parts := strings.Split(a.cmd.GetText(), " ")
+			if len(parts) == 0 {
+				a.SetFocus(a.tree)
+				return
+			}
+			// If empty command, always append the selected node's path.
+			if len(parts) == 1 && a.cnode != nil {
+				parts = append(parts, a.cnode.GetReference().(nodeRef).path)
+			}
+			res, err := RunEdict(parts[0], parts[1:]...)
+			if err != nil {
+				a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
+				return
+			}
+			a.SetFocus(a.tree)
+			a.cmd.SetText(fmt.Sprintf("%s %s", parts[0], res))
+		}
+	})
+
+	a.cmd.SetFocusFunc(func() {
+		a.cmd.SetText("")
+	})
+	a.cmd.SetBlurFunc(func() {
+		a.cmd.SetText("")
+	})
+
 	// Global Functionality
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyF5 {
+		switch event.Key() {
+		case tcell.KeyF5:
 			// Refresh root. TODO: Make this not fully reconstruct the tree, somehow.
 			a.setRoot(a.root)
+		case tcell.KeyRune:
+			if event.Rune() == ':' {
+				a.SetFocus(a.cmd)
+				return nil
+			}
 		}
 		return event
 	})
@@ -160,6 +191,11 @@ func (a *app) setRoot(dir string) {
 
 	a.tree.SetRoot(a.rootNode).
 		SetCurrentNode(a.rootNode)
+
+	// Set cnode to first child if possible.
+	if children := a.rootNode.GetChildren(); children != nil {
+		a.cnode = children[0]
+	}
 
 	absdir, _ := filepath.Abs(dir)
 	a.location.SetText(absdir)
