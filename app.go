@@ -84,7 +84,10 @@ func (a *app) setup() {
 					a.cnode = node
 					return
 				}
-				if res, err := RunEdict("edit", nr.path); err != nil {
+				if res, err := RunEdict("edit", EdictContext{
+					Root:     a.root,
+					Selected: nr.path,
+				}); err != nil {
 					a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
 				} else {
 					a.cmd.SetText(fmt.Sprintf("edit %s", res))
@@ -136,7 +139,11 @@ func (a *app) setup() {
 				a.SetFocus(a.tree)
 				return
 			}
-			res, err := RunEdict(parts[0], a.cnode.GetReference().(nodeRef).path, parts[1:]...)
+			res, err := RunEdict(parts[0], EdictContext{
+				Root:      a.root,
+				Selected:  a.cnode.GetReference().(nodeRef).path,
+				Arguments: parts[1:],
+			})
 			if err != nil {
 				a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
 				return
@@ -178,8 +185,6 @@ func (a *app) setup() {
 }
 
 func (a *app) setRoot(dir string) {
-	a.root = dir
-
 	a.tree.GetRoot().ClearChildren()
 	a.tree.GetRoot().SetText(dir)
 
@@ -195,4 +200,5 @@ func (a *app) setRoot(dir string) {
 
 	absdir, _ := filepath.Abs(dir)
 	a.location.SetText(absdir)
+	a.root = absdir
 }
