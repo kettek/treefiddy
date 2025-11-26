@@ -20,6 +20,8 @@ type app struct {
 	cmd         *tview.InputField
 	cmdIsStatus bool
 
+	config Config
+
 	cnode                        *tview.TreeNode
 	lastKeyPress, lastMousePress time.Time
 }
@@ -35,7 +37,10 @@ func newApp() app {
 }
 
 func (a *app) setup() {
-	a.EnableMouse(true)
+	// Grab that config.
+	a.config = ensureConfig()
+
+	a.EnableMouse(a.config.UseMouse)
 
 	// Styling
 
@@ -85,13 +90,26 @@ func (a *app) setup() {
 					a.cnode = node
 					return
 				}
-				if res, err := RunEdict("edit", EdictContext{
+
+				// Get our edict based upon click or enter config.
+				edict := "edit"
+				if a.lastMousePress.After(a.lastKeyPress) {
+					if a.config.Actions.Click != "" {
+						edict = a.config.Actions.Click
+					}
+				} else {
+					if a.config.Actions.Enter != "" {
+						edict = a.config.Actions.Enter
+					}
+				}
+
+				if res, err := RunEdict(edict, EdictContext{
 					Root:     a.root,
 					Selected: nr.path,
 				}); err != nil {
 					a.Status(fmt.Sprintf("error: %s", err.Error()))
 				} else {
-					a.Status(fmt.Sprintf("edit %s", res))
+					a.Status(fmt.Sprintf("%s %s", edict, res))
 				}
 			}
 		} else {
@@ -112,6 +130,25 @@ func (a *app) setup() {
 		if event.Key() == tcell.KeyTab {
 			a.SetFocus(a.cmd)
 			return nil
+		} else {
+			// Check our binds...
+			for _, bind := range a.config.Binds {
+				if bind.Edict == "" {
+					continue
+				}
+				if (bind.Rune != rune(0) && bind.Rune == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
+					nr := a.cnode.GetReference().(nodeRef)
+					if res, err := RunEdict(bind.Edict, EdictContext{
+						Root:     a.root,
+						Selected: nr.path,
+					}); err != nil {
+						a.Status(fmt.Sprintf("error: %s", err.Error()))
+					} else {
+						a.Status(fmt.Sprintf("%s %s", bind.Edict, res))
+					}
+					return nil
+				}
+			}
 		}
 		return event
 	})
@@ -140,7 +177,17 @@ func (a *app) setup() {
 				a.SetFocus(a.tree)
 				return
 			}
-			res, err := RunEdict(parts[0], EdictContext{
+
+			// Use the first argument for edict command but also run through our shortcuts to see if it matches any of those.
+			edict := parts[0]
+			for _, shortcut := range a.config.Shortcuts {
+				if shortcut.Keyword == edict {
+					edict = shortcut.Edict
+					break
+				}
+			}
+
+			res, err := RunEdict(edict, EdictContext{
 				Root:      a.root,
 				Selected:  a.cnode.GetReference().(nodeRef).path,
 				Arguments: parts[1:],
@@ -150,7 +197,7 @@ func (a *app) setup() {
 				return
 			}
 			a.SetFocus(a.tree)
-			a.Status(fmt.Sprintf("%s %s", parts[0], res))
+			a.Status(fmt.Sprintf("%s %s", edict, res))
 		}
 	})
 
