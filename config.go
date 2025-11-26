@@ -15,8 +15,9 @@ type Config struct {
 }
 
 type Actions struct {
-	Click string
-	Enter string
+	Click           string
+	Enter           string
+	PostEdictEdicts map[string]string `yaml:"post_edict_edicts"`
 }
 
 type Shortcuts []Shortcut
@@ -43,6 +44,9 @@ var defaultConfig = Config{
 	Actions: Actions{
 		Click: "edit",
 		Enter: "edit",
+		PostEdictEdicts: map[string]string{
+			"create": "edit",
+		},
 	},
 	Shortcuts: []Shortcut{
 		{

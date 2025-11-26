@@ -103,14 +103,7 @@ func (a *app) setup() {
 					}
 				}
 
-				if res, err := RunEdict(edict, EdictContext{
-					Root:     a.root,
-					Selected: nr.path,
-				}); err != nil {
-					a.Status(fmt.Sprintf("error: %s", err.Error()))
-				} else {
-					a.Status(fmt.Sprintf("%s %s", edict, res))
-				}
+				a.RunEdict(edict, nr.path, nil)
 			}
 		} else {
 			// Collapse if visible, expand if collapsed.
@@ -138,14 +131,7 @@ func (a *app) setup() {
 				}
 				if (bind.Rune != rune(0) && bind.Rune == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
 					nr := a.cnode.GetReference().(nodeRef)
-					if res, err := RunEdict(bind.Edict, EdictContext{
-						Root:     a.root,
-						Selected: nr.path,
-					}); err != nil {
-						a.Status(fmt.Sprintf("error: %s", err.Error()))
-					} else {
-						a.Status(fmt.Sprintf("%s %s", bind.Edict, res))
-					}
+					a.RunEdict(bind.Edict, nr.path, nil)
 					return nil
 				}
 			}
@@ -187,11 +173,7 @@ func (a *app) setup() {
 				}
 			}
 
-			res, err := RunEdict(edict, EdictContext{
-				Root:      a.root,
-				Selected:  a.cnode.GetReference().(nodeRef).path,
-				Arguments: parts[1:],
-			})
+			res, err := a.RunEdict(edict, a.cnode.GetReference().(nodeRef).path, parts[1:])
 			if err != nil {
 				a.Status(fmt.Sprintf("error: %s", err.Error()))
 				return
@@ -246,6 +228,26 @@ func (a *app) Status(v string) {
 func (a *app) ClearStatus() {
 	a.cmd.SetText("")
 	a.cmdIsStatus = false
+}
+
+func (a *app) RunEdict(edict string, selected string, args []string) (string, error) {
+	res, err := RunEdict(edict, EdictContext{
+		Root:      a.root,
+		Selected:  selected,
+		Arguments: args,
+	})
+	if err != nil {
+		a.Status(fmt.Sprintf("error: %s", err.Error()))
+		return "", err
+	}
+	a.Status(fmt.Sprintf("%s %s", edict, res))
+	// See if we have an edict to run after this one.
+	if nextEdict, ok := a.config.Actions.PostEdictEdicts[edict]; ok {
+		// FIXME: This could infinite loop!
+		return a.RunEdict(nextEdict, selected, args)
+	}
+
+	return res, nil
 }
 
 func (a *app) setRoot(dir string) {
