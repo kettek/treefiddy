@@ -136,11 +136,7 @@ func (a *app) setup() {
 				a.SetFocus(a.tree)
 				return
 			}
-			// If empty command, always append the selected node's path.
-			if len(parts) == 1 && a.cnode != nil {
-				parts = append(parts, a.cnode.GetReference().(nodeRef).path)
-			}
-			res, err := RunEdict(parts[0], parts[1:]...)
+			res, err := RunEdict(parts[0], a.cnode.GetReference().(nodeRef).path, parts[1:]...)
 			if err != nil {
 				a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
 				return

@@ -10,7 +10,7 @@ import (
 )
 
 type Edict struct {
-	Run func(...string) (string, error)
+	Run func(string, ...string) (string, error)
 }
 
 var edicts map[string]Edict
@@ -28,17 +28,22 @@ func HasEdict(name string) bool {
 	return ok
 }
 
-func RunEdict(name string, args ...string) (string, error) {
+func RunEdict(name string, selected string, args ...string) (string, error) {
 	if e, ok := edicts[name]; ok {
-		return e.Run(args...)
+		return e.Run(selected, args...)
 	}
 	return "", fmt.Errorf("missing edict \"%s\"", name)
 }
 
 func init() {
 	RegisterEdict("edit", Edict{
-		Run: func(v ...string) (string, error) {
-			path := strings.Join(v, " ")
+		Run: func(selected string, v ...string) (string, error) {
+			var path string
+			if len(v) != 0 {
+				path = strings.Join(v, " ")
+			} else {
+				path = selected
+			}
 			abs, _ := filepath.Abs(path)
 			cmd := exec.Command(os.Getenv("EDITOR"), abs)
 			cmd.Env = os.Environ()
@@ -52,6 +57,35 @@ func init() {
 				return "", err
 			}
 			return abs, nil
+		},
+	})
+	RegisterEdict("mkdir", Edict{
+		Run: func(selected string, v ...string) (string, error) {
+			if len(v) == 0 {
+				return "", fmt.Errorf("requires a path")
+			}
+			var path string
+			// check if selected is a dir, and if so, we root ourself to it.
+			if fs, err := os.Stat(selected); err != nil {
+				return "", err
+			} else if fs.IsDir() {
+				path = filepath.Join(selected, strings.Join(v, " "))
+			} else {
+				path = strings.Join(v, " ")
+			}
+			abs, _ := filepath.Abs(path)
+			return abs, nil
+		},
+	})
+	RegisterEdict("rm", Edict{
+		Run: func(selected string, v ...string) (string, error) {
+			var path string
+			if len(v) == 0 {
+				path = selected
+			} else {
+				path = strings.Join(v, " ")
+			}
+			return path, nil
 		},
 	})
 }
