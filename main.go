@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"syscall"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -144,6 +145,7 @@ func main() {
 	add(root, dir)
 
 	var cnode *tview.TreeNode
+	var lastKeyPress, lastMousePress time.Time
 
 	tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		reference := node.GetReference()
@@ -157,8 +159,8 @@ func main() {
 			if nr.dir {
 				add(node, nr.path)
 			} else {
-				// This hackily makes it so you have to double-click to open something. FIXME: At the moment it also makes it so you have to select then enter twice which is subpar...
-				if cnode != node {
+				// If the selection is from a mouse press, do not immediately edit but rather just select and set our current node to it.
+				if !lastKeyPress.After(lastMousePress) && cnode != node {
 					cnode = node
 					return
 				}
@@ -170,12 +172,26 @@ func main() {
 		}
 	})
 
-	/*tree.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+	tree.SetChangedFunc(func(node *tview.TreeNode) {
+		// Assign cnode (which is our manually tracked current node) only if the selection was done via keyboard.
+		if lastKeyPress.After(lastMousePress) {
+			cnode = node
+		}
+	})
+
+	tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		lastKeyPress = event.When()
+		return event
+	})
+
+	tree.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+		lastMousePress = event.When()
+		// We handle double-click logic manually, so just turn it into a regular click.
 		if action == tview.MouseLeftDoubleClick {
 			return tview.MouseLeftClick, event
 		}
 		return action, event
-	})*/
+	})
 
 	grid := tview.NewGrid().SetRows(1, 0, 1).SetColumns(0)
 	grid.AddItem(loc, 0, 0, 1, 1, 1, 1, false)
