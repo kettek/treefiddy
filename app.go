@@ -132,6 +132,15 @@ func (a *app) setup() {
 
 	a.tree.SetRoot(a.rootNode)
 
+	// Global Functionality
+	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyF5 {
+			// Refresh root. TODO: Make this not fully reconstruct the tree, somehow.
+			a.setRoot(a.root)
+		}
+		return event
+	})
+
 	// Layout
 	grid := tview.NewGrid().SetRows(1, 0, 1).SetColumns(0)
 	grid.AddItem(a.location, 0, 0, 1, 1, 1, 1, false)
