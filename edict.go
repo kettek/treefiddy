@@ -89,6 +89,39 @@ func init() {
 			return abs, nil
 		},
 	})
+	RegisterEdict("create", Edict{
+		Run: func(ctx EdictContext) (string, error) {
+			if len(ctx.Arguments) == 0 {
+				return "", fmt.Errorf("requires a path")
+			}
+			var path string
+			// check if selected is a dir, and if so, we root ourself to it.
+			if fs, err := os.Stat(ctx.Selected); err != nil {
+				return "", err
+			} else if fs.IsDir() {
+				path = filepath.Join(ctx.Selected, strings.Join(ctx.Arguments, " "))
+			} else {
+				path = filepath.Join(filepath.Dir(ctx.Selected), strings.Join(ctx.Arguments, " "))
+			}
+			abs, _ := filepath.Abs(path)
+
+			if _, err := os.Stat(abs); err != nil && !os.IsNotExist(err) {
+				return "", err
+			}
+
+			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+				return "", err
+			}
+
+			if fs, err := os.Create(abs); err != nil {
+				return "", err
+			} else {
+				fs.Close()
+			}
+
+			return abs, nil
+		},
+	})
 	RegisterEdict("mkdir", Edict{
 		Run: func(ctx EdictContext) (string, error) {
 			if len(ctx.Arguments) == 0 {
