@@ -65,6 +65,30 @@ func init() {
 			return abs, nil
 		},
 	})
+	RegisterEdict("open", Edict{
+		Run: func(ctx EdictContext) (string, error) {
+			var path string
+			if len(ctx.Arguments) != 0 {
+				path = strings.Join(ctx.Arguments, " ")
+			} else {
+				path = ctx.Selected
+			}
+			abs, _ := filepath.Abs(path)
+
+			program := "xdg-open"
+			// First check if "xdg-open" is available.
+			_, err := exec.LookPath("xdg-open")
+			// Otherwise default to "open".
+			if err != nil {
+				program = "open"
+			}
+
+			if err := exec.Command(program, abs).Start(); err != nil {
+				return "", err
+			}
+			return abs, nil
+		},
+	})
 	RegisterEdict("mkdir", Edict{
 		Run: func(ctx EdictContext) (string, error) {
 			if len(ctx.Arguments) == 0 {
