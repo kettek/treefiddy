@@ -13,11 +13,12 @@ import (
 
 type app struct {
 	*tview.Application
-	root     string
-	location *tview.InputField
-	tree     *tview.TreeView
-	rootNode *tview.TreeNode
-	cmd      *tview.InputField
+	root        string
+	location    *tview.InputField
+	tree        *tview.TreeView
+	rootNode    *tview.TreeNode
+	cmd         *tview.InputField
+	cmdIsStatus bool
 
 	cnode                        *tview.TreeNode
 	lastKeyPress, lastMousePress time.Time
@@ -88,9 +89,9 @@ func (a *app) setup() {
 					Root:     a.root,
 					Selected: nr.path,
 				}); err != nil {
-					a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
+					a.Status(fmt.Sprintf("error: %s", err.Error()))
 				} else {
-					a.cmd.SetText(fmt.Sprintf("edit %s", res))
+					a.Status(fmt.Sprintf("edit %s", res))
 				}
 			}
 		} else {
@@ -129,7 +130,7 @@ func (a *app) setup() {
 	a.cmd.SetDoneFunc(func(key tcell.Key) {
 		switch key {
 		case tcell.KeyEscape:
-			a.cmd.SetText("")
+			a.ClearStatus()
 			a.SetFocus(a.tree)
 		case tcell.KeyBacktab:
 			a.SetFocus(a.tree)
@@ -145,19 +146,24 @@ func (a *app) setup() {
 				Arguments: parts[1:],
 			})
 			if err != nil {
-				a.cmd.SetText(fmt.Sprintf("error: %s", err.Error()))
+				a.Status(fmt.Sprintf("error: %s", err.Error()))
 				return
 			}
 			a.SetFocus(a.tree)
-			a.cmd.SetText(fmt.Sprintf("%s %s", parts[0], res))
+			a.Status(fmt.Sprintf("%s %s", parts[0], res))
 		}
 	})
 
 	a.cmd.SetFocusFunc(func() {
-		a.cmd.SetText("")
+		if a.cmdIsStatus {
+			a.ClearStatus()
+		}
 	})
-	a.cmd.SetBlurFunc(func() {
-		a.cmd.SetText("")
+	a.cmd.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if a.cmdIsStatus {
+			a.ClearStatus()
+		}
+		return event
 	})
 
 	// Global Functionality
@@ -182,6 +188,17 @@ func (a *app) setup() {
 	grid.AddItem(a.cmd, 2, 0, 1, 1, 1, 1, false)
 
 	a.SetRoot(grid, true)
+}
+
+func (a *app) Status(v string) {
+	a.cmd.SetText(v)
+	a.cmdIsStatus = true
+	a.SetFocus(a.tree)
+}
+
+func (a *app) ClearStatus() {
+	a.cmd.SetText("")
+	a.cmdIsStatus = false
 }
 
 func (a *app) setRoot(dir string) {
