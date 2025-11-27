@@ -11,20 +11,15 @@ import (
 )
 
 type System struct {
-	runtime *qjs.Runtime
-	context *qjs.Context
-	plugins []registry.Plugin
+	runtime  *qjs.Runtime
+	context  *qjs.Context
+	plugins  []Plugin
+	rplugins []registry.Plugin
 }
 
 type Plugin struct {
+	registry.Plugin
 	valuesToFree []*qjs.Value
-	Features     struct {
-		TreeNodeMangleFunc func(string, bool) string
-	}
-}
-
-func (plugin *Plugin) TreeNodeMangleFunc() func(string, bool) string {
-	return plugin.Features.TreeNodeMangleFunc
 }
 
 func (s *System) Name() string {
@@ -104,17 +99,17 @@ func (s *System) loadPlugin(path string) error {
 				return err
 			}
 			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)
-			plugin.Features.TreeNodeMangleFunc = goMangleFunc
+			plugin.TreeNodeMangleFunc = goMangleFunc
 		}
 	}
 
-	s.plugins = append(s.plugins, &plugin)
+	s.plugins = append(s.plugins, plugin)
+	s.rplugins = append(s.rplugins, plugin.Plugin)
 
 	return nil
 }
 
-func (s *System) unloadPlugin(p registry.Plugin) {
-	plugin := p.(*Plugin)
+func (s *System) unloadPlugin(plugin Plugin) {
 	for _, val := range plugin.valuesToFree {
 		val.Free()
 	}
@@ -126,6 +121,7 @@ func (s *System) UnloadPlugins() {
 		s.unloadPlugin(plugin)
 	}
 	s.plugins = nil
+	s.rplugins = nil
 }
 
 func (s *System) Deinit() error {
@@ -136,7 +132,7 @@ func (s *System) Deinit() error {
 }
 
 func (s *System) Plugins() []registry.Plugin {
-	return s.plugins
+	return s.rplugins
 }
 
 func init() {

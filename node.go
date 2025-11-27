@@ -52,7 +52,7 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 		name := file.Name()
 		for _, system := range registry.Systems() {
 			for _, plugin := range system.Plugins() {
-				if mangler := plugin.TreeNodeMangleFunc(); mangler != nil {
+				if mangler := plugin.TreeNodeMangleFunc; mangler != nil {
 					name = mangler(name, isDir)
 				}
 			}

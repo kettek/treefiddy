@@ -6,12 +6,6 @@ type System interface {
 	Deinit() error
 	LoadPlugins() error
 	Plugins() []Plugin
-	// RegisterPlugin("name", TYPE)
-	// UnregisterPlugin("name")
-}
-
-type Plugin interface {
-	TreeNodeMangleFunc() func(string, bool) string
 }
 
 var systems []System
