@@ -3,7 +3,8 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build --minify --outfile dist/nerd-font-icons.js ./index.ts",
+    "mappings": "bun run get_mappings.ts",
+    "build": "bun run mappings && bun build --minify --outfile dist/nerd-font-icons.js ./index.ts",
     "install": "bun run build && cp dist/*.js $(bun run get_install_dir.ts)"
   },
   "devDependencies": {

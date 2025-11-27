@@ -1,26 +1,36 @@
-import mappings from './mappings.ts'
+import mappings from './mappings.json'
 
 export default {
-	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}): string {
+	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}): {Name: string, Color: string, Prefix: string, Suffix: string} {
+		const mangled: {Name: string, Color: string, Prefix: string, Suffix: string} = {Name: node.Name, Color: "", Suffix: "", Prefix: ""}
 		if (node.Dir) {
-			return mappings.dir + " " + node.Name
+			mangled.Prefix = mappings.other.dir[0] + " "
+			mangled.Color = mappings.other.dir[1]
+			return mangled
 		}
 
 		let target = node.Name.toLowerCase()
 
 		let match: string
-		if (match = mappings.exact[target]) {
-			return match + " " + node.Name
+		let res: string
+		if (match = mappings.filename[target]) {
+				mangled.Prefix = match[0] + " "
+				mangled.Color = match[1]
+				return mangled
 		}
 		if (match = target.substring(target.lastIndexOf('.'))) {
 			match = match.substring(1)
-			let res = mappings.extensions[match]
-			if (res) {
-				return res + " " + node.Name
+			if (res = mappings.extensions[match]) {
+				mangled.Prefix = res[0] + " "
+				mangled.Color = res[1]
+				return mangled
 			}
 		}
 
-		return mappings.default + " " + node.Name
+		mangled.Prefix = mappings.other.default[0] + " "
+		mangled.Color = mappings.other.default[1]
+
+		return mangled
 	},
 }
 
