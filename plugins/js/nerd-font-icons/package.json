@@ -1,0 +1,19 @@
+{
+  "name": "treefiddy-plugin-test",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun build --minify --outfile dist/nerd-font-icons.js ./index.ts",
+    "install": "bun run build && cp dist/*.js $(bun run get_install_dir.ts)"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@folder/xdg": "^4.0.1",
+    "@m234/nerd-fonts": "^0.4.0"
+  }
+}
