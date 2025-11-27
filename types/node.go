@@ -7,3 +7,11 @@ type FileReference struct {
 	Path string
 	Dir  bool
 }
+
+// NodeMangling is the result of node mangling.
+type NodeMangling struct {
+	Prefix string
+	Suffix string
+	Name   string
+	Color  string
+}

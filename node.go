@@ -1,13 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"slices"
+	//	"strconv"
 
-	"github.com/gdamore/tcell/v2"
+	//"github.com/gdamore/tcell/v2"
 	"github.com/kettek/treefiddy/system/registry"
 	"github.com/kettek/treefiddy/types"
 	"github.com/rivo/tview"
@@ -69,13 +71,19 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 			Path: path,
 			Dir:  isDir,
 		}
+
 		for _, system := range registry.Systems() {
 			for _, plugin := range system.Plugins() {
 				if mangler := plugin.TreeNodeMangleFunc; mangler != nil {
-					fr.Name, err = mangler(fr)
+					mangling, err := mangler(fr)
 					if err != nil {
 						// TODO: show some sorta err instead of panicking
 						panic(err)
+					}
+					if mangling.Color != "" {
+						fr.Name = fmt.Sprintf("[%s]%s[-]%s%s", mangling.Color, mangling.Prefix, mangling.Name, mangling.Suffix)
+					} else {
+						fr.Name = fmt.Sprintf("%s%s%s", mangling.Prefix, mangling.Name, mangling.Suffix)
 					}
 				}
 			}
@@ -84,10 +92,10 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 		node := tview.NewTreeNode(fr.Name).
 			SetReference(fr).
 			SetSelectable(true)
-		if isDir {
-			node.SetColor(tcell.ColorPink)
-		}
 		node.SetTextStyle(node.GetTextStyle().Background(0)) // Blank out background... can we set this universally?
+		if isDir {
+			node.SetTextStyle(node.GetTextStyle().Bold(true))
+		}
 		target.AddChild(node)
 	}
 }

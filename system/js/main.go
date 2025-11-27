@@ -97,11 +97,24 @@ func (s *System) loadPlugin(path string) error {
 		case "mangleTreeNode":
 			mangleFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)
-			goMangleFunc, err := qjs.JsFuncToGo[func(types.FileReference) (string, error)](mangleFunc)
+			goMangleFunc, err := qjs.JsFuncToGo[func(types.FileReference) (map[string]any, error)](mangleFunc)
 			if err != nil {
 				return err
 			}
-			plugin.TreeNodeMangleFunc = goMangleFunc
+
+			// TODO: Is it possible to just have qjs return the converted type...? It seems the return value is always `map[string]any` and does not do any type conversions for return values...
+			plugin.TreeNodeMangleFunc = func(fr types.FileReference) (types.NodeMangling, error) {
+				jmangled, err := goMangleFunc(fr)
+				if err != nil {
+					return types.NodeMangling{}, err
+				}
+				return types.NodeMangling{
+					Name:   jmangled["Name"].(string),
+					Color:  jmangled["Color"].(string),
+					Prefix: jmangled["Prefix"].(string),
+					Suffix: jmangled["Suffix"].(string),
+				}, err
+			}
 		case "sortTreeNodes":
 			sortFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, sortFunc)
