@@ -17,8 +17,8 @@ type System struct {
 }
 
 type Plugin struct {
-	Features struct {
-		treeNodeMangleFunc *qjs.Value
+	valuesToFree []*qjs.Value
+	Features     struct {
 		TreeNodeMangleFunc func(string, bool) string
 	}
 }
@@ -103,7 +103,7 @@ func (s *System) loadPlugin(path string) error {
 			if err != nil {
 				return err
 			}
-			plugin.Features.treeNodeMangleFunc = mangleFunc
+			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)
 			plugin.Features.TreeNodeMangleFunc = goMangleFunc
 		}
 	}
@@ -115,9 +115,10 @@ func (s *System) loadPlugin(path string) error {
 
 func (s *System) unloadPlugin(p registry.Plugin) {
 	plugin := p.(*Plugin)
-	if plugin.Features.TreeNodeMangleFunc != nil {
-		plugin.Features.treeNodeMangleFunc.Free()
+	for _, val := range plugin.valuesToFree {
+		val.Free()
 	}
+	plugin.valuesToFree = nil
 }
 
 func (s *System) UnloadPlugins() {
