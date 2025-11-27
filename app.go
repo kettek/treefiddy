@@ -83,6 +83,7 @@ func (a *app) setup() {
 			// Load and show files in this directory.
 			nr := reference.(nodeRef)
 			if nr.dir {
+				a.cnode = node
 				addDirToTreeNode(node, nr.path)
 			} else {
 				// If the selection is from a mouse press, do not immediately edit but rather just select and set our current node to it.
@@ -108,6 +109,8 @@ func (a *app) setup() {
 		} else {
 			// Collapse if visible, expand if collapsed.
 			node.SetExpanded(!node.IsExpanded())
+			// Update our cnode to match this node.
+			a.cnode = node
 		}
 	})
 
