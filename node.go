@@ -9,6 +9,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/kettek/treefiddy/system/registry"
+	"github.com/kettek/treefiddy/types"
 	"github.com/rivo/tview"
 )
 
@@ -24,9 +25,23 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 		}))
 	}
 
-	if sortFunc != nil {
-		slices.SortStableFunc(files, sortFunc)
+	// TODO: Collect active plugin funcs into one clean slice...
+	for _, system := range registry.Systems() {
+		for _, plugin := range system.Plugins() {
+			if f := plugin.TreeFilterFunc; f != nil {
+				files = slices.Collect(filter(files, f))
+			}
+		}
 	}
+
+	for _, system := range registry.Systems() {
+		for _, plugin := range system.Plugins() {
+			if sort := plugin.TreeSortFunc; sort != nil {
+				slices.SortStableFunc(files, sort)
+			}
+		}
+	}
+
 	for _, file := range files {
 		path := filepath.Join(path, file.Name())
 		isDir := false
@@ -49,20 +64,25 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 		}
 
 		// Run any manglers...
-		name := file.Name()
+		fr := types.FileReference{
+			Name: file.Name(),
+			Path: path,
+			Dir:  isDir,
+		}
 		for _, system := range registry.Systems() {
 			for _, plugin := range system.Plugins() {
 				if mangler := plugin.TreeNodeMangleFunc; mangler != nil {
-					name = mangler(name, isDir)
+					fr.Name, err = mangler(fr)
+					if err != nil {
+						// TODO: show some sorta err instead of panicking
+						panic(err)
+					}
 				}
 			}
 		}
 
-		node := tview.NewTreeNode(name).
-			SetReference(nodeRef{
-				path: path,
-				dir:  isDir,
-			}).
+		node := tview.NewTreeNode(fr.Name).
+			SetReference(fr).
 			SetSelectable(true)
 		if isDir {
 			node.SetColor(tcell.ColorPink)

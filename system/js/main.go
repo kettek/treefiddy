@@ -2,12 +2,14 @@
 package js
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/fastschema/qjs"
 	"github.com/kettek/treefiddy/system/registry"
+	"github.com/kettek/treefiddy/types"
 )
 
 type System struct {
@@ -94,12 +96,28 @@ func (s *System) loadPlugin(path string) error {
 		switch propName {
 		case "mangleTreeNode":
 			mangleFunc := val.GetPropertyStr(propName)
-			goMangleFunc, err := qjs.JsFuncToGo[func(string, bool) string](mangleFunc)
+			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)
+			goMangleFunc, err := qjs.JsFuncToGo[func(types.FileReference) (string, error)](mangleFunc)
 			if err != nil {
 				return err
 			}
-			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)
 			plugin.TreeNodeMangleFunc = goMangleFunc
+		case "sortTreeNodes":
+			sortFunc := val.GetPropertyStr(propName)
+			plugin.valuesToFree = append(plugin.valuesToFree, sortFunc)
+			goSortFunc, err := qjs.JsFuncToGo[func(a, b fs.FileInfo) int](sortFunc)
+			if err != nil {
+				return err
+			}
+			plugin.TreeSortFunc = goSortFunc
+		case "filterTreeNode":
+			filterFunc := val.GetPropertyStr(propName)
+			plugin.valuesToFree = append(plugin.valuesToFree, filterFunc)
+			goFilterFunc, err := qjs.JsFuncToGo[func(a fs.FileInfo) bool](filterFunc)
+			if err != nil {
+				return err
+			}
+			plugin.TreeFilterFunc = goFilterFunc
 		}
 	}
 

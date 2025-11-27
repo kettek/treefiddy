@@ -10,6 +10,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	_ "github.com/kettek/treefiddy/system/js"
 	"github.com/kettek/treefiddy/system/registry"
+	"github.com/kettek/treefiddy/types"
 	"github.com/rivo/tview"
 )
 
@@ -83,10 +84,10 @@ func (a *app) setup() {
 		children := node.GetChildren()
 		if len(children) == 0 {
 			// Load and show files in this directory.
-			nr := reference.(nodeRef)
-			if nr.dir {
+			nr := reference.(types.FileReference)
+			if nr.Dir {
 				a.cnode = node
-				addDirToTreeNode(node, nr.path)
+				addDirToTreeNode(node, nr.Path)
 			} else {
 				// If the selection is from a mouse press, do not immediately edit but rather just select and set our current node to it.
 				if !a.lastKeyPress.After(a.lastMousePress) && a.cnode != node {
@@ -106,7 +107,7 @@ func (a *app) setup() {
 					}
 				}
 
-				a.RunEdict(edict, nr.path, nil)
+				a.RunEdict(edict, nr.Path, nil)
 			}
 		} else {
 			// Collapse if visible, expand if collapsed.
@@ -135,8 +136,8 @@ func (a *app) setup() {
 					continue
 				}
 				if (bind.Rune != rune(0) && bind.Rune == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
-					nr := a.cnode.GetReference().(nodeRef)
-					a.RunEdict(bind.Edict, nr.path, nil)
+					nr := a.cnode.GetReference().(types.FileReference)
+					a.RunEdict(bind.Edict, nr.Path, nil)
 					return nil
 				}
 			}
@@ -178,7 +179,7 @@ func (a *app) setup() {
 				}
 			}
 
-			a.RunEdict(edict, a.cnode.GetReference().(nodeRef).path, parts[1:])
+			a.RunEdict(edict, a.cnode.GetReference().(types.FileReference).Path, parts[1:])
 			a.SetFocus(a.tree)
 		}
 	})
