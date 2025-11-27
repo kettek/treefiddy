@@ -8,7 +8,7 @@ import (
 	"slices"
 
 	"github.com/gdamore/tcell/v2"
-	"github.com/kettek/treefiddy/systems/registry"
+	"github.com/kettek/treefiddy/system/registry"
 	"github.com/rivo/tview"
 )
 

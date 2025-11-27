@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	_ "github.com/kettek/treefiddy/systems/js"
-	"github.com/kettek/treefiddy/systems/registry"
+	_ "github.com/kettek/treefiddy/system/js"
+	"github.com/kettek/treefiddy/system/registry"
 	"github.com/rivo/tview"
 )
 
@@ -219,7 +219,7 @@ func (a *app) setup() {
 	a.SetRoot(grid, true)
 
 	// Plugin shenanigans.
-	if a.config.PluginSystems.JavaScript {
+	if a.config.Systems.JavaScriptPlugins {
 		for _, system := range registry.Systems() {
 			if err := system.Init(); err != nil {
 				panic(err)

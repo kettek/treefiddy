@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/fastschema/qjs"
-	"github.com/kettek/treefiddy/systems/registry"
+	"github.com/kettek/treefiddy/system/registry"
 )
 
 type System struct {
