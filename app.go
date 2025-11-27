@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	_ "github.com/kettek/treefiddy/systems/js"
+	"github.com/kettek/treefiddy/systems/registry"
 	"github.com/rivo/tview"
 )
 
@@ -176,13 +178,8 @@ func (a *app) setup() {
 				}
 			}
 
-			res, err := a.RunEdict(edict, a.cnode.GetReference().(nodeRef).path, parts[1:])
-			if err != nil {
-				a.Status(fmt.Sprintf("error: %s", err.Error()))
-				return
-			}
+			a.RunEdict(edict, a.cnode.GetReference().(nodeRef).path, parts[1:])
 			a.SetFocus(a.tree)
-			a.Status(fmt.Sprintf("%s %s", edict, res))
 		}
 	})
 
@@ -220,6 +217,20 @@ func (a *app) setup() {
 	grid.AddItem(a.cmd, 2, 0, 1, 1, 1, 1, false)
 
 	a.SetRoot(grid, true)
+
+	// Plugin shenanigans.
+	if a.config.PluginSystems.JavaScript {
+		for _, system := range registry.Systems() {
+			if err := system.Init(); err != nil {
+				panic(err)
+			}
+		}
+		for _, system := range registry.Systems() {
+			if err := system.LoadPlugins(); err != nil {
+				system.Deinit()
+			}
+		}
+	}
 }
 
 func (a *app) Status(v string) {

@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/kettek/treefiddy/systems/registry"
 	"github.com/rivo/tview"
 )
 
@@ -46,7 +47,18 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 			}
 			isDir = file.IsDir()
 		}
-		node := tview.NewTreeNode(file.Name()).
+
+		// Run any manglers...
+		name := file.Name()
+		for _, system := range registry.Systems() {
+			for _, plugin := range system.Plugins() {
+				if mangler := plugin.TreeNodeMangleFunc(); mangler != nil {
+					name = mangler(name, isDir)
+				}
+			}
+		}
+
+		node := tview.NewTreeNode(name).
 			SetReference(nodeRef{
 				path: path,
 				dir:  isDir,

@@ -11,7 +11,12 @@ type Config struct {
 	Actions   Actions
 	Binds     Binds
 	Shortcuts Shortcuts
-	UseMouse  bool `yaml:"use_mouse"`
+	UseMouse  bool    `yaml:"use_mouse"`
+	Systems   Systems `yaml:"systems"`
+}
+
+type Systems struct {
+	JavaScriptPlugins bool `yaml:"javascript_plugins"`
 }
 
 type Actions struct {
@@ -69,6 +74,9 @@ var defaultConfig = Config{
 		},
 	},
 	UseMouse: true,
+	Systems: Systems{
+		JavaScriptPlugins: true,
+	},
 }
 
 func ensureConfig() (cfg Config) {
