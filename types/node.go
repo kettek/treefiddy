@@ -10,8 +10,10 @@ type FileReference struct {
 
 // NodeMangling is the result of node mangling.
 type NodeMangling struct {
-	Prefix string
-	Suffix string
-	Name   string
-	Color  string
+	Prefix      string
+	PrefixColor string
+	Suffix      string
+	SuffixColor string
+	Name        string
+	Color       string
 }

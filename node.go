@@ -80,11 +80,27 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 						// TODO: show some sorta err instead of panicking
 						panic(err)
 					}
-					if mangling.Color != "" {
-						fr.Name = fmt.Sprintf("[%s]%s[-]%s%s", mangling.Color, mangling.Prefix, mangling.Name, mangling.Suffix)
-					} else {
-						fr.Name = fmt.Sprintf("%s%s%s", mangling.Prefix, mangling.Name, mangling.Suffix)
+					var name string
+					if mangling.Prefix != "" {
+						if mangling.PrefixColor != "" {
+							name += fmt.Sprintf("[%s]%s[-]", mangling.PrefixColor, mangling.Prefix)
+						} else {
+							name += mangling.Prefix
+						}
 					}
+					if mangling.Color != "" {
+						name += fmt.Sprintf("[%s]%s[-]", mangling.Color, mangling.Name)
+					} else {
+						name += mangling.Name
+					}
+					if mangling.Suffix != "" {
+						if mangling.SuffixColor != "" {
+							name += fmt.Sprintf("[%s]%s[-]", mangling.SuffixColor, mangling.Suffix)
+						} else {
+							name += mangling.Suffix
+						}
+					}
+					fr.Name = name
 				}
 			}
 		}

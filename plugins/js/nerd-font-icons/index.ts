@@ -1,11 +1,20 @@
 import mappings from './mappings.json'
 
+type Mangled = {
+	Name: string
+	Color: string
+	Prefix: string
+	PrefixColor: string
+	Suffix: string
+	SuffixColor: string
+}
+
 export default {
-	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}): {Name: string, Color: string, Prefix: string, Suffix: string} {
-		const mangled: {Name: string, Color: string, Prefix: string, Suffix: string} = {Name: node.Name, Color: "", Suffix: "", Prefix: ""}
+	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}): Mangled {
+		const mangled: Mangled = {Name: node.Name, Color: "", Prefix: "", PrefixColor: "", Suffix: "", SuffixColor: ""}
 		if (node.Dir) {
 			mangled.Prefix = mappings.other.dir[0] + " "
-			mangled.Color = mappings.other.dir[1]
+			mangled.PrefixColor = mappings.other.dir[1]
 			return mangled
 		}
 
@@ -15,20 +24,20 @@ export default {
 		let res: string
 		if (match = mappings.filename[target]) {
 				mangled.Prefix = match[0] + " "
-				mangled.Color = match[1]
+				mangled.PrefixColor = match[1]
 				return mangled
 		}
 		if (match = target.substring(target.lastIndexOf('.'))) {
 			match = match.substring(1)
 			if (res = mappings.extensions[match]) {
 				mangled.Prefix = res[0] + " "
-				mangled.Color = res[1]
+				mangled.PrefixColor = res[1]
 				return mangled
 			}
 		}
 
 		mangled.Prefix = mappings.other.default[0] + " "
-		mangled.Color = mappings.other.default[1]
+		mangled.PrefixColor = mappings.other.default[1]
 
 		return mangled
 	},

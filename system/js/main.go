@@ -109,10 +109,12 @@ func (s *System) loadPlugin(path string) error {
 					return types.NodeMangling{}, err
 				}
 				return types.NodeMangling{
-					Name:   jmangled["Name"].(string),
-					Color:  jmangled["Color"].(string),
-					Prefix: jmangled["Prefix"].(string),
-					Suffix: jmangled["Suffix"].(string),
+					Name:        jmangled["Name"].(string),
+					Color:       jmangled["Color"].(string),
+					Prefix:      jmangled["Prefix"].(string),
+					PrefixColor: jmangled["PrefixColor"].(string),
+					Suffix:      jmangled["Suffix"].(string),
+					SuffixColor: jmangled["SuffixColor"].(string),
 				}, err
 			}
 		case "sortTreeNodes":
