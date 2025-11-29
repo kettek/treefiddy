@@ -209,6 +209,14 @@ func (s *System) LoadPlugin(name string) error {
 				return err
 			}
 			plugin.OnInit = goFn
+		case "onTreeRefresh":
+			fn := val.GetPropertyStr(propName)
+			plugin.valuesToFree = append(plugin.valuesToFree, fn)
+			goFn, err := qjs.JsFuncToGo[func() error](fn)
+			if err != nil {
+				return err
+			}
+			plugin.OnTreeRefresh = goFn
 		}
 	}
 

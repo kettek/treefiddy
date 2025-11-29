@@ -198,7 +198,6 @@ func (a *app) setup(dir string) {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyF5:
-			// Refresh root. TODO: Make this not fully reconstruct the tree, somehow.
 			a.setRoot(a.root)
 		case tcell.KeyRune:
 			if event.Rune() == ':' {
@@ -335,10 +334,30 @@ func (a *app) RunEdict(edict string, selected string, args []string) (string, er
 }
 
 func (a *app) setRoot(dir string) {
-	a.tree.GetRoot().ClearChildren()
-	a.tree.GetRoot().SetText(dir)
+	absdir, _ := filepath.Abs(dir)
+	if err := os.Chdir(absdir); err != nil {
+		panic(err)
+	}
 
-	addDirToTreeNode(a.rootNode, dir)
+	// Refresh any registered.
+	for _, system := range registry.Systems() {
+		for _, plugin := range system.Plugins() {
+			if plugin.OnTreeRefresh != nil {
+				if err := plugin.OnTreeRefresh(); err != nil {
+					// TODO: Err msg
+					panic(err)
+				}
+			}
+		}
+	}
+
+	// TODO: if absdir == old root, try not to reconstruct the whole tree.
+	a.root = absdir
+
+	a.tree.GetRoot().ClearChildren()
+	a.tree.GetRoot().SetText(".")
+
+	addDirToTreeNode(a.rootNode, ".")
 
 	a.tree.SetRoot(a.rootNode).
 		SetCurrentNode(a.rootNode)
@@ -348,7 +367,5 @@ func (a *app) setRoot(dir string) {
 		a.cnode = children[0]
 	}
 
-	absdir, _ := filepath.Abs(dir)
 	a.location.SetText(absdir)
-	a.root = absdir
 }

@@ -18,19 +18,26 @@ type Mangled = {
 type ExecHook = (cmd: string, ...args: string[]) => string
 type MangleTreeNode = (node: {Name: string, Path: string; Dir: boolean}, mangled: Mangled) => Mangled
 
+type OnInit = () => void
+type OnTreeRefresh = () => void
+
 interface Plugin {
+	// settings
 	permissions: {
 		exec: string[],
 	},
+	// plugin -> host hook calls
 	exec?: ExecHook,
-	onInit?: Function,
-	onTreeRefresh?: Function,
+	// host -> plugin event handlers
+	onInit?: OnInit,
+	onTreeRefresh?: OnTreeRefresh,
+	// host -> plugin calls
 	mangleTreeNode?: MangleTreeNode
 }
 
 interface LocalPlugin {
-	adjustColor: (string) => string
-	refresh: () => void
+	adjustColor: (path: string) => string
+	refreshFiles: () => void
 }
 
 let modifiedPaths: Set<string> = new Set()
@@ -42,6 +49,9 @@ const plugin: (Plugin & LocalPlugin) = {
 	},
 	exec: (cmd: string, ...args: string[]): string => {return ""},
 	refreshFiles: function() {
+		modifiedPaths.clear()
+		untrackedPaths.clear()
+
 		const modifiedFiles = plugin.exec?.("git", "ls-files", "-m", "--exclude-standard").split("\n") ?? []
 		const untrackedFiles = plugin.exec?.("git", "ls-files", "-o", "--exclude-standard").split("\n") ?? []
 
@@ -58,10 +68,6 @@ const plugin: (Plugin & LocalPlugin) = {
 				untrackedPaths.add(dirname)
 			}
 		}
-	},
-	//updateTreeNode,
-	onInit: function() {
-		plugin.refreshFiles()
 	},
 	onTreeRefresh: function() {
 		plugin.refreshFiles()
