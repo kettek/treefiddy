@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/fastschema/qjs"
@@ -25,6 +27,11 @@ type Plugin struct {
 	name         string
 	path         string
 	valuesToFree []*qjs.Value
+	permissions  pluginPermissions
+}
+
+type pluginPermissions struct {
+	exec []string
 }
 
 func (s *System) Name() string {
@@ -114,17 +121,58 @@ func (s *System) LoadPlugin(name string) error {
 
 	for _, propName := range propNames {
 		switch propName {
+		case "permissions":
+			perms := val.GetPropertyStr(propName)
+			defer perms.Free()
+			permNames, err := perms.GetOwnPropertyNames()
+			if err != nil {
+				return err
+			}
+			for _, permName := range permNames {
+				switch permName {
+				case "exec":
+					var executables []string
+					perm := perms.GetPropertyStr(permName)
+					defer perm.Free()
+					execArray, err := perm.ToArray()
+					if err != nil {
+						return err
+					}
+					for _, execItem := range execArray.GetOwnProperties() {
+						execName := execArray.GetPropertyStr(execItem.String())
+						defer execName.Free()
+						executables = append(executables, execName.String())
+					}
+					// TODO: Show prompt for permissions to execute the given executables.
+					plugin.permissions.exec = executables
+				default:
+					return fmt.Errorf("unknown permission %s", permName)
+				}
+			}
+		case "exec":
+			execFunc, err := qjs.FuncToJS(s.context, func(cmd string, args ...string) (string, error) {
+				if !slices.Contains(plugin.permissions.exec, cmd) {
+					return "", fmt.Errorf("exec permission not granted for cmd %s", cmd)
+				}
+				out, err := exec.Command(cmd, args...).Output()
+				return string(out), err
+			})
+			if err != nil {
+				return err
+			}
+			plugin.valuesToFree = append(plugin.valuesToFree, execFunc)
+			val.SetPropertyStr(propName, execFunc)
 		case "mangleTreeNode":
 			mangleFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)
-			goMangleFunc, err := qjs.JsFuncToGo[func(types.FileReference) (map[string]any, error)](mangleFunc)
+			goMangleFunc, err := qjs.JsFuncToGo[func(types.FileReference, types.NodeMangling) (map[string]any, error)](mangleFunc)
 			if err != nil {
 				return err
 			}
 
 			// TODO: Is it possible to just have qjs return the converted type...? It seems the return value is always `map[string]any` and does not do any type conversions for return values...
-			plugin.TreeNodeMangleFunc = func(fr types.FileReference) (types.NodeMangling, error) {
-				jmangled, err := goMangleFunc(fr)
+			plugin.TreeNodeMangleFunc = func(fr types.FileReference, mangling types.NodeMangling) (types.NodeMangling, error) {
+				jmangled, err := goMangleFunc(fr, mangling)
 				if err != nil {
 					return types.NodeMangling{}, err
 				}
@@ -153,6 +201,14 @@ func (s *System) LoadPlugin(name string) error {
 				return err
 			}
 			plugin.TreeFilterFunc = goFilterFunc
+		case "onInit":
+			fn := val.GetPropertyStr(propName)
+			plugin.valuesToFree = append(plugin.valuesToFree, fn)
+			goFn, err := qjs.JsFuncToGo[func() error](fn)
+			if err != nil {
+				return err
+			}
+			plugin.OnInit = goFn
 		}
 	}
 

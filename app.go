@@ -280,6 +280,14 @@ func (a *app) setup(dir string) {
 					}
 					status(fmt.Sprintf("ok (%dms)", time.Since(start).Milliseconds()))
 				}
+				// Call init.
+				for _, plugin := range system.Plugins() {
+					if plugin.OnInit != nil {
+						if err := plugin.OnInit(); err != nil {
+							status(err.Error())
+						}
+					}
+				}
 				status(fmt.Sprintf("\n    (%dms)", time.Since(start).Milliseconds()))
 
 				elapsed := time.Since(systemStart)

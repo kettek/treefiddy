@@ -10,8 +10,7 @@ type Mangled = {
 }
 
 export default {
-	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}): Mangled {
-		const mangled: Mangled = {Name: node.Name, Color: "", Prefix: "", PrefixColor: "", Suffix: "", SuffixColor: ""}
+	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}, mangled: Mangled): Mangled {
 		if (node.Dir) {
 			mangled.Prefix = mappings.other.dir[0] + " "
 			mangled.PrefixColor = mappings.other.dir[1]

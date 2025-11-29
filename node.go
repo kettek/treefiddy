@@ -71,39 +71,43 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 			Path: path,
 			Dir:  isDir,
 		}
+		mangling := types.NodeMangling{
+			Name: file.Name(),
+		}
 
 		for _, system := range registry.Systems() {
 			for _, plugin := range system.Plugins() {
 				if mangler := plugin.TreeNodeMangleFunc; mangler != nil {
-					mangling, err := mangler(fr)
+					mangling, err = mangler(fr, mangling)
 					if err != nil {
 						// TODO: show some sorta err instead of panicking
 						panic(err)
 					}
-					var name string
-					if mangling.Prefix != "" {
-						if mangling.PrefixColor != "" {
-							name += fmt.Sprintf("[%s]%s[-]", mangling.PrefixColor, mangling.Prefix)
-						} else {
-							name += mangling.Prefix
-						}
-					}
-					if mangling.Color != "" {
-						name += fmt.Sprintf("[%s]%s[-]", mangling.Color, mangling.Name)
-					} else {
-						name += mangling.Name
-					}
-					if mangling.Suffix != "" {
-						if mangling.SuffixColor != "" {
-							name += fmt.Sprintf("[%s]%s[-]", mangling.SuffixColor, mangling.Suffix)
-						} else {
-							name += mangling.Suffix
-						}
-					}
-					fr.Name = name
 				}
 			}
 		}
+
+		var name string
+		if mangling.Prefix != "" {
+			if mangling.PrefixColor != "" {
+				name += fmt.Sprintf("[%s]%s[-]", mangling.PrefixColor, mangling.Prefix)
+			} else {
+				name += mangling.Prefix
+			}
+		}
+		if mangling.Color != "" {
+			name += fmt.Sprintf("[%s]%s[-]", mangling.Color, mangling.Name)
+		} else {
+			name += mangling.Name
+		}
+		if mangling.Suffix != "" {
+			if mangling.SuffixColor != "" {
+				name += fmt.Sprintf("[%s]%s[-]", mangling.SuffixColor, mangling.Suffix)
+			} else {
+				name += mangling.Suffix
+			}
+		}
+		fr.Name = name
 
 		node := tview.NewTreeNode(fr.Name).
 			SetReference(fr).
