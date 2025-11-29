@@ -75,6 +75,14 @@ func (a *app) setup(dir string) {
 			a.SetFocus(a.tree)
 		}
 	})
+	a.location.SetFocusFunc(func() {
+		absdir, _ := filepath.Abs(a.root)
+		a.location.SetText(absdir)
+	})
+	a.location.SetBlurFunc(func() {
+		absdir, _ := filepath.Abs(a.root)
+		a.location.SetText(filepath.Base(absdir))
+	})
 
 	a.tree.SetSelectedFunc(func(node *tview.TreeNode) {
 		reference := node.GetReference()
@@ -128,6 +136,9 @@ func (a *app) setup(dir string) {
 		a.lastKeyPress = event.When()
 		if event.Key() == tcell.KeyTab {
 			a.SetFocus(a.cmd)
+			return nil
+		} else if event.Key() == tcell.KeyBacktab {
+			a.SetFocus(a.location)
 			return nil
 		} else {
 			// Check our binds...
@@ -364,5 +375,5 @@ func (a *app) setRoot(dir string) {
 		a.cnode = children[0]
 	}
 
-	a.location.SetText(absdir)
+	a.location.SetText(filepath.Base(absdir))
 }
