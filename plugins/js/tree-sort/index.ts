@@ -1,12 +1,7 @@
-type Entry = {
-	IsDir: () => boolean;
-	Name: () => string;
-	Path: () => string;
-}
+import type { Plugin, Entry } from '../treefiddy'
 
-// TODO: Make this stuff configurable...
-export default {
-	sortTreeNodes: function(a: Entry, b: Entry): int {
+const plugin: Plugin = {
+	sortTreeNodes: function(a: Entry, b: Entry): number {
 		if (a.IsDir() && !b.IsDir()) {
 			return -1
 		}
@@ -22,3 +17,4 @@ export default {
 	},
 }
 
+export default plugin

@@ -1,15 +1,7 @@
+import type { Plugin, Mangled } from '../treefiddy'
 import mappings from './mappings.json'
 
-type Mangled = {
-	Name: string
-	Color: string
-	Prefix: string
-	PrefixColor: string
-	Suffix: string
-	SuffixColor: string
-}
-
-export default {
+const plugin: Plugin = {
 	mangleTreeNode: function (node: {Name: string, Path: string; Dir: boolean}, mangled: Mangled): Mangled {
 		if (node.Dir) {
 			mangled.Prefix = mappings.other.dir[0] + " "
@@ -42,3 +34,4 @@ export default {
 	},
 }
 
+export default plugin

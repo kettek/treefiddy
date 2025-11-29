@@ -1,39 +1,5 @@
 import path from 'path'
-
-type Entry = {
-	IsDir: () => boolean;
-	Name: () => string;
-	Path: () => string;
-}
-
-type Mangled = {
-	Name: string
-	Color: string
-	Prefix: string
-	PrefixColor: string
-	Suffix: string
-	SuffixColor: string
-}
-
-type ExecHook = (cmd: string, ...args: string[]) => string
-type MangleTreeNode = (node: {Name: string, Path: string; Dir: boolean}, mangled: Mangled) => Mangled
-
-type OnInit = () => void
-type OnTreeRefresh = () => void
-
-interface Plugin {
-	// settings
-	permissions: {
-		exec: string[],
-	},
-	// plugin -> host hook calls
-	exec?: ExecHook,
-	// host -> plugin event handlers
-	onInit?: OnInit,
-	onTreeRefresh?: OnTreeRefresh,
-	// host -> plugin calls
-	mangleTreeNode?: MangleTreeNode
-}
+import type { Plugin, Mangled } from '../treefiddy'
 
 interface LocalPlugin {
 	adjustColor: (path: string) => string
