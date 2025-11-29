@@ -15,6 +15,20 @@ type EdictContext struct {
 	Arguments []string
 }
 
+func (ctx *EdictContext) TargetAbsPath() string {
+	var path string
+	if len(ctx.Arguments) == 0 { // "<selected>"
+		path = ctx.Selected
+	} else if ctx.Arguments[0][0] == '/' { // "/some/location" -> "<rootdir>/some/location"
+		path = filepath.Join(ctx.Root, strings.Join(ctx.Arguments, " "))
+	} else { // "<dir of selected>/some/location"
+		path = filepath.Join(filepath.Dir(ctx.Selected), strings.Join(ctx.Arguments, " "))
+	}
+	abs, _ := filepath.Abs(path)
+
+	return abs
+}
+
 type Edict struct {
 	Run func(ctx EdictContext) (string, error)
 }
@@ -44,14 +58,9 @@ func RunEdict(name string, ctx EdictContext) (string, error) {
 func init() {
 	RegisterEdict("edit", Edict{
 		Run: func(ctx EdictContext) (string, error) {
-			var path string
-			if len(ctx.Arguments) != 0 {
-				path = strings.Join(ctx.Arguments, " ")
-			} else {
-				path = ctx.Selected
-			}
-			abs, _ := filepath.Abs(path)
-			cmd := exec.Command(os.Getenv("EDITOR"), abs)
+			path := ctx.TargetAbsPath()
+
+			cmd := exec.Command(os.Getenv("EDITOR"), path)
 			cmd.Env = os.Environ()
 			cmd.Stdin = nil
 			cmd.Stdout = nil
@@ -62,18 +71,12 @@ func init() {
 			if err := cmd.Start(); err != nil {
 				return "", err
 			}
-			return abs, nil
+			return path, nil
 		},
 	})
 	RegisterEdict("open", Edict{
 		Run: func(ctx EdictContext) (string, error) {
-			var path string
-			if len(ctx.Arguments) != 0 {
-				path = strings.Join(ctx.Arguments, " ")
-			} else {
-				path = ctx.Selected
-			}
-			abs, _ := filepath.Abs(path)
+			path := ctx.TargetAbsPath()
 
 			program := "xdg-open"
 			// First check if "xdg-open" is available.
@@ -83,10 +86,10 @@ func init() {
 				program = "open"
 			}
 
-			if err := exec.Command(program, abs).Start(); err != nil {
+			if err := exec.Command(program, path).Start(); err != nil {
 				return "", err
 			}
-			return abs, nil
+			return path, nil
 		},
 	})
 	RegisterEdict("create", Edict{
@@ -94,32 +97,24 @@ func init() {
 			if len(ctx.Arguments) == 0 {
 				return "", fmt.Errorf("requires a path")
 			}
-			var path string
-			// check if selected is a dir, and if so, we root ourself to it.
-			if fs, err := os.Stat(ctx.Selected); err != nil {
-				return "", err
-			} else if fs.IsDir() {
-				path = filepath.Join(ctx.Selected, strings.Join(ctx.Arguments, " "))
-			} else {
-				path = filepath.Join(filepath.Dir(ctx.Selected), strings.Join(ctx.Arguments, " "))
-			}
-			abs, _ := filepath.Abs(path)
 
-			if _, err := os.Stat(abs); err != nil && !os.IsNotExist(err) {
+			path := ctx.TargetAbsPath()
+
+			if _, err := os.Stat(path); err != nil && !os.IsNotExist(err) {
 				return "", err
 			}
 
-			if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 				return "", err
 			}
 
-			if fs, err := os.Create(abs); err != nil {
+			if fs, err := os.Create(path); err != nil {
 				return "", err
 			} else {
 				fs.Close()
 			}
 
-			return abs, nil
+			return path, nil
 		},
 	})
 	RegisterEdict("mkdir", Edict{
@@ -140,15 +135,13 @@ func init() {
 			return abs, nil
 		},
 	})
-	RegisterEdict("rm", Edict{
+	RegisterEdict("remove", Edict{
 		Run: func(ctx EdictContext) (string, error) {
-			var path string
-			if len(ctx.Arguments) == 0 {
-				path = ctx.Selected
-			} else {
-				path = strings.Join(append([]string{ctx.Root}, ctx.Arguments...), " ")
-			}
-			return path, nil
+			path := ctx.TargetAbsPath()
+
+			err := os.Remove(path)
+
+			return path, err
 		},
 	})
 }
