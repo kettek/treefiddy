@@ -27,21 +27,12 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 		}))
 	}
 
-	// TODO: Collect active plugin funcs into one clean slice...
-	for _, system := range registry.Systems() {
-		for _, plugin := range system.Plugins() {
-			if f := plugin.TreeFilterFunc; f != nil {
-				files = slices.Collect(filter(files, f))
-			}
-		}
+	for _, fn := range registry.PluginTreeFilterFuncs {
+		files = slices.Collect(filter(files, fn))
 	}
 
-	for _, system := range registry.Systems() {
-		for _, plugin := range system.Plugins() {
-			if sort := plugin.TreeSortFunc; sort != nil {
-				slices.SortStableFunc(files, sort)
-			}
-		}
+	for _, fn := range registry.PluginTreeSortFuncs {
+		slices.SortStableFunc(files, fn)
 	}
 
 	for _, file := range files {
@@ -75,15 +66,11 @@ func addDirToTreeNode(target *tview.TreeNode, path string) {
 			Name: file.Name(),
 		}
 
-		for _, system := range registry.Systems() {
-			for _, plugin := range system.Plugins() {
-				if mangler := plugin.TreeNodeMangleFunc; mangler != nil {
-					mangling, err = mangler(fr, mangling)
-					if err != nil {
-						// TODO: show some sorta err instead of panicking
-						panic(err)
-					}
-				}
+		for _, mangler := range registry.PluginTreeNodeMangleFuncs {
+			mangling, err = mangler(fr, mangling)
+			if err != nil {
+				// TODO: show some sorta err instead of panicking
+				panic(err)
 			}
 		}
 

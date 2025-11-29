@@ -171,7 +171,7 @@ func (s *System) LoadPlugin(name string) error {
 			}
 
 			// TODO: Is it possible to just have qjs return the converted type...? It seems the return value is always `map[string]any` and does not do any type conversions for return values...
-			plugin.TreeNodeMangleFunc = func(fr types.FileReference, mangling types.NodeMangling) (types.NodeMangling, error) {
+			mfn := func(fr types.FileReference, mangling types.NodeMangling) (types.NodeMangling, error) {
 				jmangled, err := goMangleFunc(fr, mangling)
 				if err != nil {
 					return types.NodeMangling{}, err
@@ -185,6 +185,7 @@ func (s *System) LoadPlugin(name string) error {
 					SuffixColor: jmangled["SuffixColor"].(string),
 				}, err
 			}
+			plugin.TreeNodeMangle = mfn
 		case "sortTreeNodes":
 			sortFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, sortFunc)
@@ -192,7 +193,7 @@ func (s *System) LoadPlugin(name string) error {
 			if err != nil {
 				return err
 			}
-			plugin.TreeSortFunc = goSortFunc
+			plugin.TreeSort = goSortFunc
 		case "filterTreeNode":
 			filterFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, filterFunc)
@@ -200,7 +201,7 @@ func (s *System) LoadPlugin(name string) error {
 			if err != nil {
 				return err
 			}
-			plugin.TreeFilterFunc = goFilterFunc
+			plugin.TreeFilter = goFilterFunc
 		case "onInit":
 			fn := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, fn)

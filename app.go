@@ -289,6 +289,8 @@ func (a *app) setup(dir string) {
 				}
 				status(fmt.Sprintf("\n    (%dms)", time.Since(start).Milliseconds()))
 
+				registry.RefreshPluginFuncs()
+
 				elapsed := time.Since(systemStart)
 				status(fmt.Sprintf("\n  (%dms)", elapsed.Milliseconds()))
 			}
@@ -340,14 +342,9 @@ func (a *app) setRoot(dir string) {
 	}
 
 	// Refresh any registered.
-	for _, system := range registry.Systems() {
-		for _, plugin := range system.Plugins() {
-			if plugin.OnTreeRefresh != nil {
-				if err := plugin.OnTreeRefresh(); err != nil {
-					// TODO: Err msg
-					panic(err)
-				}
-			}
+	for _, fn := range registry.PluginOnTreeRefreshFuncs {
+		if err := fn(); err != nil {
+			panic(err)
 		}
 	}
 
