@@ -2,6 +2,7 @@
 package js
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -21,6 +22,8 @@ type System struct {
 
 type Plugin struct {
 	registry.Plugin
+	name         string
+	path         string
 	valuesToFree []*qjs.Value
 }
 
@@ -39,7 +42,7 @@ func (s *System) Init() error {
 	return nil
 }
 
-func (s *System) LoadPlugins() error {
+func (s *System) PopulatePlugins() error {
 	systemDir, err := registry.SystemDir(s.Name())
 	if err != nil {
 		return err
@@ -54,14 +57,15 @@ func (s *System) LoadPlugins() error {
 				if _, err := os.Stat(filepath.Join(systemDir, entry.Name(), "plugin.js")); err != nil {
 					return err
 				}
-				if err := s.loadPlugin(filepath.Join(systemDir, entry.Name(), "plugin.js")); err != nil {
-					return err
-				}
+				s.plugins = append(s.plugins, Plugin{
+					name: entry.Name(),
+					path: filepath.Join(systemDir, entry.Name(), "plugin.js"),
+				})
 			} else if strings.HasSuffix(entry.Name(), ".js") {
-				// Parse it as a stand-alone plugin.
-				if err := s.loadPlugin(filepath.Join(systemDir, entry.Name())); err != nil {
-					return err
-				}
+				s.plugins = append(s.plugins, Plugin{
+					name: entry.Name()[:len(entry.Name())-len(filepath.Ext(entry.Name()))],
+					path: filepath.Join(systemDir, entry.Name()),
+				})
 			}
 		}
 	}
@@ -69,18 +73,36 @@ func (s *System) LoadPlugins() error {
 	return nil
 }
 
-func (s *System) loadPlugin(path string) error {
-	bytes, err := os.ReadFile(path)
+func (s *System) PluginNames() (names []string) {
+	for _, p := range s.plugins {
+		names = append(names, p.name)
+	}
+	return
+}
+
+func (s *System) LoadPlugin(name string) error {
+	var plugin *Plugin
+	for _, p := range s.plugins {
+		if p.name == name {
+			plugin = &p
+		}
+	}
+
+	if plugin == nil {
+		return fmt.Errorf("no such plugin %s", name)
+	}
+
+	bytes, err := os.ReadFile(plugin.path)
 	if err != nil {
 		return err
 	}
 
-	byteCode, err := s.context.Compile(path, qjs.Code(string(bytes)), qjs.TypeModule())
+	byteCode, err := s.context.Compile(plugin.path, qjs.Code(string(bytes)), qjs.TypeModule())
 	if err != nil {
 		return err
 	}
 
-	val, err := s.context.Eval(path, qjs.Bytecode(byteCode), qjs.TypeModule())
+	val, err := s.context.Eval(plugin.path, qjs.Bytecode(byteCode), qjs.TypeModule())
 	if err != nil {
 		return err
 	}
@@ -89,8 +111,6 @@ func (s *System) loadPlugin(path string) error {
 	if err != nil {
 		return err
 	}
-
-	var plugin Plugin
 
 	for _, propName := range propNames {
 		switch propName {
@@ -136,7 +156,6 @@ func (s *System) loadPlugin(path string) error {
 		}
 	}
 
-	s.plugins = append(s.plugins, plugin)
 	s.rplugins = append(s.rplugins, plugin.Plugin)
 
 	return nil

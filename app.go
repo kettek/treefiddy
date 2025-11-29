@@ -39,7 +39,7 @@ func newApp() app {
 	}
 }
 
-func (a *app) setup() {
+func (a *app) setup(dir string) {
 	// Grab that config.
 	a.config = ensureConfig()
 
@@ -154,8 +154,6 @@ func (a *app) setup() {
 		return action, event
 	})
 
-	a.tree.SetRoot(a.rootNode)
-
 	a.cmd.SetDoneFunc(func(key tcell.Key) {
 		switch key {
 		case tcell.KeyEscape:
@@ -217,21 +215,84 @@ func (a *app) setup() {
 	grid.AddItem(a.tree, 1, 0, 1, 1, 1, 1, true)
 	grid.AddItem(a.cmd, 2, 0, 1, 1, 1, 1, false)
 
-	a.SetRoot(grid, true)
-
-	// Plugin shenanigans.
-	if a.config.Systems.JavaScriptPlugins {
-		for _, system := range registry.Systems() {
-			if err := system.Init(); err != nil {
-				panic(err)
-			}
-		}
-		for _, system := range registry.Systems() {
-			if err := system.LoadPlugins(); err != nil {
-				system.Deinit()
-			}
-		}
+	modal := func(p tview.Primitive) tview.Primitive {
+		return tview.NewFlex().
+			AddItem(nil, 0, 1, false).
+			AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+				AddItem(nil, 0, 1, false).
+				AddItem(p, 0, 4, true).
+				AddItem(nil, 0, 1, false), 0, 10, true).
+			AddItem(nil, 0, 1, false)
 	}
+
+	a.tree.SetRoot(a.rootNode)
+
+	info := tview.NewTextView()
+	info.SetBorder(true)
+
+	pages := tview.NewPages().
+		AddPage("picker", grid, true, true).
+		AddPage("modal", modal(info), true, false)
+
+	a.SetRoot(pages, true)
+
+	pages.ShowPage("modal")
+	info.SetText("Starting...")
+
+	go func() {
+		text := ""
+		status := func(v string) {
+			text += v
+			a.QueueUpdateDraw(func() {
+				info.SetText(text)
+				info.ScrollToEnd()
+			})
+		}
+		// Plugin shenanigans.
+		status("SYSTEMS\n")
+		if a.config.Systems.JavaScriptPlugins {
+			totalStart := time.Now()
+			for _, system := range registry.Systems() {
+				systemStart := time.Now()
+				status("  " + system.Name() + "\n")
+				status("    init... ")
+				if err := system.Init(); err != nil {
+					status(err.Error())
+				} else {
+					elapsed := time.Since(systemStart)
+					status(fmt.Sprintf("ok (%dms)", elapsed.Milliseconds()))
+				}
+				status("\n    plugins")
+				start := time.Now()
+
+				if err := system.PopulatePlugins(); err != nil {
+					system.Deinit()
+					status("      " + err.Error())
+					continue
+				}
+
+				for _, name := range system.PluginNames() {
+					status("\n      " + name + "... ")
+					start := time.Now()
+					if err := system.LoadPlugin(name); err != nil {
+						status(err.Error())
+						continue
+					}
+					status(fmt.Sprintf("ok (%dms)", time.Since(start).Milliseconds()))
+				}
+				status(fmt.Sprintf("\n    (%dms)", time.Since(start).Milliseconds()))
+
+				elapsed := time.Since(systemStart)
+				status(fmt.Sprintf("\n  (%dms)", elapsed.Milliseconds()))
+			}
+			totalElapsed := time.Since(totalStart)
+			status(fmt.Sprintf("\n%dms TOTAL", totalElapsed.Milliseconds()))
+		}
+		a.QueueUpdateDraw(func() {
+			a.setRoot(dir)
+			pages.HidePage("modal")
+		})
+	}()
 }
 
 func (a *app) Status(v string) {

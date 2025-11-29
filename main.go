@@ -31,8 +31,7 @@ func main() {
 	}
 
 	app := newApp()
-	app.setup()
-	app.setRoot(dir)
+	app.setup(dir)
 
 	if err := app.Run(); err != nil {
 		panic(err)

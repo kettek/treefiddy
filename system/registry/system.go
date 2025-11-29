@@ -4,7 +4,9 @@ type System interface {
 	Name() string
 	Init() error
 	Deinit() error
-	LoadPlugins() error
+	PopulatePlugins() error
+	PluginNames() []string
+	LoadPlugin(name string) error
 	Plugins() []Plugin
 }
 
