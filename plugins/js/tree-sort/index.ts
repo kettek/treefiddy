@@ -7,8 +7,8 @@ const plugin: Plugin = {
 		} else if (!a.Dir && b.Dir) {
 			return 1
 		}
-		const an = a.Name.toLowerCase()
-		const bn = b.Name.toLowerCase()
+		const an = a.OriginalName.toLowerCase()
+		const bn = b.OriginalName.toLowerCase()
 		return an.localeCompare(bn)
 	},
 	filterTreeNode: function(a: Entry): boolean {
