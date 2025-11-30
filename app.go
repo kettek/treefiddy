@@ -447,6 +447,22 @@ func (a *app) syncNode(node *tview.TreeNode, path string, shouldExpand bool) err
 
 			// Remove removed children.
 			for _, child := range removedChildren {
+				if a.cnode == child {
+					// Uh... try to set it to a "sibling"
+					var prevChild *tview.TreeNode
+					children := node.GetChildren()
+					for i, child2 := range children {
+						if child == child2 {
+							if prevChild == nil && i < len(children)-1 {
+								a.tree.SetCurrentNode(children[i+1])
+							} else {
+								a.tree.SetCurrentNode(prevChild)
+							}
+							break
+						}
+						prevChild = child2
+					}
+				}
 				node.RemoveChild(child)
 			}
 
