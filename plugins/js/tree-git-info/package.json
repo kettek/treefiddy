@@ -1,10 +1,10 @@
 {
-  "name": "node-git-info",
+  "name": "tree-git-info",
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build --minify --outfile dist/node-git-info.js ./index.ts",
-    "install": "bun run build && cp dist/*.js $(bun run get_install_dir.ts)"
+    "build": "bun build --minify --outdir dist ./index.ts",
+    "install": "bun run build && rm -rf $(bun run ../get_install_dir.ts) && cp -rfv dist $(bun run ../get_install_dir.ts)"
   },
   "devDependencies": {
     "@types/bun": "latest"

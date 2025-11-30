@@ -61,12 +61,12 @@ func (s *System) PopulatePlugins() error {
 		for _, entry := range entries {
 			if entry.IsDir() {
 				// Look for plugin.js
-				if _, err := os.Stat(filepath.Join(systemDir, entry.Name(), "plugin.js")); err != nil {
+				if _, err := os.Stat(filepath.Join(systemDir, entry.Name(), "index.js")); err != nil {
 					return err
 				}
 				s.plugins = append(s.plugins, Plugin{
 					name: entry.Name(),
-					path: filepath.Join(systemDir, entry.Name(), "plugin.js"),
+					path: filepath.Join(systemDir, entry.Name(), "index.js"),
 				})
 			} else if strings.HasSuffix(entry.Name(), ".js") {
 				s.plugins = append(s.plugins, Plugin{
