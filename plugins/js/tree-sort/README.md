@@ -1,5 +1,5 @@
-# sort
-Thie plugin provides basic alphanumeric file sorting with directories first.
+# tree-sort
+This plugin provides basic alphanumeric file sorting with directories first.
 
 ----
 

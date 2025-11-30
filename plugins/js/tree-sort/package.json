@@ -1,5 +1,5 @@
 {
-  "name": "treefiddy-tree-sort",
+  "name": "tree-sort",
   "module": "index.ts",
   "type": "module",
   "scripts": {
