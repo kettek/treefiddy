@@ -3,9 +3,10 @@ package types
 
 // FileReference stores information about a file for use in tree node generation.
 type FileReference struct {
-	Name string
-	Path string
-	Dir  bool
+	OriginalName string
+	Name         string
+	Path         string
+	Dir          bool
 }
 
 // NodeMangling is the result of node mangling.

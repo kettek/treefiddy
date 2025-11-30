@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -95,7 +98,8 @@ func (a *app) setup(dir string) {
 			nr := reference.(types.FileReference)
 			if nr.Dir {
 				a.cnode = node
-				addDirToTreeNode(node, nr.Path)
+				a.syncNode(node, nr.Path, true)
+				// addDirToTreeNode(node, nr.Path)
 			} else {
 				// If the selection is from a mouse press, do not immediately edit but rather just select and set our current node to it.
 				if !a.lastKeyPress.After(a.lastMousePress) && a.cnode != node {
@@ -209,7 +213,7 @@ func (a *app) setup(dir string) {
 	a.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyF5:
-			a.setRoot(a.root)
+			a.refreshRoot()
 		case tcell.KeyRune:
 			if event.Rune() == ':' {
 				a.SetFocus(a.cmd)
@@ -343,7 +347,194 @@ func (a *app) RunEdict(edict string, selected string, args []string) (string, er
 		return a.RunEdict(nextEdict, selected, args)
 	}
 
+	a.refreshRoot() // Update tree on any edict. TODO: Maybe make this only for certain edicts?
+
 	return res, nil
+}
+
+// TODO: Make this function more efficient and probably break it up into separate funcs.
+func (a *app) syncNode(node *tview.TreeNode, path string, shouldExpand bool) error {
+	ref := node.GetReference()
+	if ref == nil {
+		// New node, let's do stuff.
+		fi, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		isDir := false
+		mode := fi.Mode()
+		if mode&os.ModeDir == os.ModeDir {
+			isDir = true
+		}
+		// Follow the symlink and see if it is a directory or not.
+		if mode&os.ModeSymlink == os.ModeSymlink {
+			sym, err := filepath.EvalSymlinks(path)
+			if err != nil {
+				return err
+			}
+			// Might as well replace file var with our eval'd one.
+			fi, err = os.Stat(sym)
+			if err != nil {
+				return err
+			}
+			isDir = fi.IsDir()
+		}
+
+		fr := types.FileReference{
+			OriginalName: fi.Name(),
+			Name:         fi.Name(),
+			Path:         path,
+			Dir:          isDir,
+		}
+
+		node.SetTextStyle(node.GetTextStyle().Background(0)) // Blank out background... can we set this universally?
+		if isDir {
+			node.SetTextStyle(node.GetTextStyle().Bold(true))
+		}
+		ref = fr
+	}
+	// Old node, let's updatie.
+	fr := ref.(types.FileReference)
+	fr.Name = fr.OriginalName
+	fr.Name = a.mangle(fr)
+	node.SetReference(fr).
+		SetSelectable(true).
+		SetText(fr.Name).
+		SetExpanded(shouldExpand)
+	if fr.Dir {
+		if node.IsExpanded() {
+			fis, err := ioutil.ReadDir(path)
+			if err != nil {
+				return err
+			}
+			var newFiles []fs.FileInfo
+			var existingChildren []*tview.TreeNode
+			var removedChildren []*tview.TreeNode
+
+			// Collect removed and still-existing children.
+			for _, child := range node.GetChildren() {
+				nr := child.GetReference().(types.FileReference)
+				found := false
+				for _, fi := range fis {
+					path2 := filepath.Join(path, fi.Name())
+					if path2 == nr.Path {
+						found = true
+						break
+					}
+				}
+				if !found {
+					removedChildren = append(removedChildren, child)
+				} else {
+					existingChildren = append(existingChildren, child)
+				}
+			}
+
+			// Collect new file infos.
+			for _, fi := range fis {
+				path2 := filepath.Join(path, fi.Name())
+				found := false
+				for _, child := range node.GetChildren() {
+					nr := child.GetReference().(types.FileReference)
+					if path2 == nr.Path {
+						found = true
+						break
+					}
+				}
+				if !found {
+					newFiles = append(newFiles, fi)
+				}
+			}
+
+			// Remove removed children.
+			for _, child := range removedChildren {
+				node.RemoveChild(child)
+			}
+
+			// Update existing.
+			for _, child := range existingChildren {
+				fr := child.GetReference().(types.FileReference)
+				a.syncNode(child, fr.Path, child.IsExpanded())
+			}
+
+			// Filter new.
+			if filterFunc != nil {
+				newFiles = slices.Collect(filter(newFiles, func(s fs.FileInfo) bool {
+					return filterFunc(s)
+				}))
+			}
+
+			for _, fn := range registry.PluginTreeFilterFuncs {
+				newFiles = slices.Collect(filter(newFiles, fn))
+			}
+
+			// Add new.
+			for _, fi := range newFiles {
+				path2 := filepath.Join(path, fi.Name())
+				childNode := tview.NewTreeNode("")
+				a.syncNode(childNode, path2, false)
+				node.AddChild(childNode)
+			}
+		}
+
+		// Ugh... sorting here feels kinda bad, man.
+		children := node.GetChildren()
+		for _, fn := range registry.PluginTreeSortFuncs {
+			slices.SortStableFunc(children, func(a, b *tview.TreeNode) int {
+				return fn(a.GetReference().(types.FileReference), b.GetReference().(types.FileReference))
+			})
+		}
+		node.ClearChildren()
+		node.SetChildren(children)
+	}
+	//}
+	return nil
+}
+
+func (a *app) mangle(fr types.FileReference) string {
+	var err error
+	mangling := types.NodeMangling{
+		Name: fr.OriginalName,
+	}
+
+	for _, mangler := range registry.PluginTreeNodeMangleFuncs {
+		mangling, err = mangler(fr, mangling)
+		if err != nil {
+			// TODO: show some sorta err instead of panicking
+			panic(err)
+		}
+	}
+
+	var name string
+	if mangling.Prefix != "" {
+		if mangling.PrefixColor != "" {
+			name += fmt.Sprintf("[%s]%s[-]", mangling.PrefixColor, mangling.Prefix)
+		} else {
+			name += mangling.Prefix
+		}
+	}
+	if mangling.Color != "" {
+		name += fmt.Sprintf("[%s]%s[-]", mangling.Color, mangling.Name)
+	} else {
+		name += mangling.Name
+	}
+	if mangling.Suffix != "" {
+		if mangling.SuffixColor != "" {
+			name += fmt.Sprintf("[%s]%s[-]", mangling.SuffixColor, mangling.Suffix)
+		} else {
+			name += mangling.Suffix
+		}
+	}
+	return name
+}
+
+func (a *app) refreshRoot() {
+	// Refresh any registered.
+	for _, fn := range registry.PluginOnTreeRefreshFuncs {
+		if err := fn(); err != nil {
+			panic(err)
+		}
+	}
+	a.syncNode(a.tree.GetRoot(), ".", true)
 }
 
 func (a *app) setRoot(dir string) {
@@ -359,20 +550,26 @@ func (a *app) setRoot(dir string) {
 		}
 	}
 
-	// TODO: if absdir == old root, try not to reconstruct the whole tree.
-	a.root = absdir
+	if a.root == absdir {
+		a.syncNode(a.tree.GetRoot(), ".", true)
+	} else {
+		a.root = absdir
 
-	a.tree.GetRoot().ClearChildren()
-	a.tree.GetRoot().SetText(".")
+		a.tree.GetRoot().ClearChildren()
+		a.tree.GetRoot().SetText(".")
 
-	addDirToTreeNode(a.rootNode, ".")
+		a.syncNode(a.tree.GetRoot(), ".", true)
+	}
 
-	a.tree.SetRoot(a.rootNode).
-		SetCurrentNode(a.rootNode)
+	if a.tree.GetRoot() == nil {
+		a.tree.SetRoot(a.rootNode).
+			SetCurrentNode(a.rootNode)
+	}
 
 	// Set cnode to first child if possible.
 	if children := a.rootNode.GetChildren(); children != nil {
 		a.cnode = children[0]
+		a.tree.SetCurrentNode(a.cnode)
 	}
 
 	a.location.SetText(filepath.Base(absdir))

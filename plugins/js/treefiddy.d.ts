@@ -4,6 +4,13 @@ export type Entry = {
 	Path: () => string;
 }
 
+export type FileReference = {
+	OriginalName: string
+	Name:         string
+	Path:         string
+	Dir:          boolean
+}
+
 export type Mangled = {
 	Name: string
 	Color: string
@@ -19,7 +26,7 @@ export type ExecHook = (cmd: string, ...args: string[]) => string
 // Host->Plugin function hooks
 export type MangleTreeNode = (node: {Name: string, Path: string; Dir: boolean}, mangled: Mangled) => Mangled
 
-export type SortTreeNodes = (a: Entry, b: Entry) => number
+export type SortTreeNodes = (a: FileReference, b: FileReference) => number
 export type FilterTreeNode = (a: Entry) => boolean
 
 // Host->Plugin event hooks

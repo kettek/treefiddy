@@ -189,7 +189,7 @@ func (s *System) LoadPlugin(name string) error {
 		case "sortTreeNodes":
 			sortFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, sortFunc)
-			goSortFunc, err := qjs.JsFuncToGo[func(a, b fs.FileInfo) int](sortFunc)
+			goSortFunc, err := qjs.JsFuncToGo[func(a, b types.FileReference) int](sortFunc)
 			if err != nil {
 				return err
 			}

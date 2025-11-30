@@ -10,7 +10,7 @@ type (
 	OnInitFunc         func() error
 	OnTreeRefreshFunc  func() error
 	TreeNodeMangleFunc func(types.FileReference, types.NodeMangling) (types.NodeMangling, error)
-	TreeSortFunc       func(a, b fs.FileInfo) int
+	TreeSortFunc       func(a, b types.FileReference) int
 	TreeFilterFunc     func(a fs.FileInfo) bool
 )
 
