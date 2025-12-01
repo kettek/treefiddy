@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/hymkor/trash-go"
 )
 
 type EdictContext struct {
@@ -192,6 +194,18 @@ func init() {
 			}
 
 			return from + "->" + to, nil
+		},
+	})
+	RegisterEdict("trash", Edict{
+		Run: func(ctx EdictContext) (string, error) {
+			path, err := ctx.TargetAbsPath()
+			if err != nil {
+				return "", err
+			}
+
+			err = trash.Throw(path)
+
+			return path, err
 		},
 	})
 }
