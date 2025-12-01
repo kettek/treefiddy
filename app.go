@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -407,7 +406,7 @@ func (a *app) syncNode(node *tview.TreeNode, path string, shouldExpand bool) err
 			if err != nil {
 				return err
 			}
-			var newFiles []fs.FileInfo
+			var newFiles []types.FileReference
 			var existingChildren []*tview.TreeNode
 			var removedChildren []*tview.TreeNode
 
@@ -441,7 +440,12 @@ func (a *app) syncNode(node *tview.TreeNode, path string, shouldExpand bool) err
 					}
 				}
 				if !found {
-					newFiles = append(newFiles, fi)
+					newFiles = append(newFiles, types.FileReference{
+						OriginalName: fi.Name(),
+						Name:         fi.Name(),
+						Path:         path2,
+						Dir:          fi.IsDir(),
+					})
 				}
 			}
 
@@ -474,7 +478,7 @@ func (a *app) syncNode(node *tview.TreeNode, path string, shouldExpand bool) err
 
 			// Filter new.
 			if filterFunc != nil {
-				newFiles = slices.Collect(filter(newFiles, func(s fs.FileInfo) bool {
+				newFiles = slices.Collect(filter(newFiles, func(s types.FileReference) bool {
 					return filterFunc(s)
 				}))
 			}
@@ -484,10 +488,11 @@ func (a *app) syncNode(node *tview.TreeNode, path string, shouldExpand bool) err
 			}
 
 			// Add new.
-			for _, fi := range newFiles {
-				path2 := filepath.Join(path, fi.Name())
+			for _, fr := range newFiles {
+				// path2 := filepath.Join(path, fi.Name())
 				childNode := tview.NewTreeNode("")
-				a.syncNode(childNode, path2, false)
+				// childNode.SetReference(fr) // It'd be nice if we could assign this here instead of recreating it later...
+				a.syncNode(childNode, fr.Path, false)
 				node.AddChild(childNode)
 			}
 		}

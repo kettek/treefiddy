@@ -3,7 +3,6 @@ package js
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -186,7 +185,7 @@ func (s *System) LoadPlugin(name string) error {
 				}, err
 			}
 			plugin.TreeNodeMangle = mfn
-		case "sortTreeNodes":
+		case "sortTreeNode":
 			sortFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, sortFunc)
 			goSortFunc, err := qjs.JsFuncToGo[func(a, b types.FileReference) int](sortFunc)
@@ -197,7 +196,7 @@ func (s *System) LoadPlugin(name string) error {
 		case "filterTreeNode":
 			filterFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, filterFunc)
-			goFilterFunc, err := qjs.JsFuncToGo[func(a fs.FileInfo) bool](filterFunc)
+			goFilterFunc, err := qjs.JsFuncToGo[func(a types.FileReference) bool](filterFunc)
 			if err != nil {
 				return err
 			}

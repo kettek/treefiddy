@@ -20,6 +20,11 @@ export type Mangled = {
 	SuffixColor: string
 }
 
+export type PeriodicFunc = {
+	delta: string
+	func: () => void
+}
+
 // Plugin->Host function hooks
 export type ExecHook = (cmd: string, ...args: string[]) => string
 
@@ -38,6 +43,7 @@ export interface Plugin {
 	permissions?: {
 		exec?: string[],
 	},
+	periodics?: PeriodicFunc[],
 	exec?: ExecHook,
 
 	onInit?: OnInit,

@@ -1,12 +1,13 @@
 package main
 
 import (
-	"io/fs"
 	"iter"
 	"os"
+
+	"github.com/kettek/treefiddy/types"
 )
 
-var filterFunc func(a fs.FileInfo) bool
+var filterFunc func(a types.FileReference) bool
 
 func filter[S any](s []S, fn func(S) bool) iter.Seq[S] {
 	return func(yield func(s S) bool) {
@@ -26,8 +27,8 @@ func main() {
 		dir = os.Args[1]
 	}
 
-	filterFunc = func(a fs.FileInfo) bool {
-		return a.Name()[0] != '.'
+	filterFunc = func(a types.FileReference) bool {
+		return a.Name[0] != '.'
 	}
 
 	app := newApp()

@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"io/fs"
 
 	"github.com/kettek/treefiddy/types"
 )
@@ -11,7 +10,7 @@ type (
 	OnTreeRefreshFunc  func() error
 	TreeNodeMangleFunc func(types.FileReference, types.NodeMangling) (types.NodeMangling, error)
 	TreeSortFunc       func(a, b types.FileReference) int
-	TreeFilterFunc     func(a fs.FileInfo) bool
+	TreeFilterFunc     func(a types.FileReference) bool
 )
 
 type Plugin struct {
