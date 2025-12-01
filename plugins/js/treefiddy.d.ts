@@ -1,9 +1,3 @@
-export type Entry = {
-	IsDir: () => boolean;
-	Name: () => string;
-	Path: () => string;
-}
-
 export type FileReference = {
 	OriginalName: string
 	Name:         string
@@ -31,8 +25,8 @@ export type ExecHook = (cmd: string, ...args: string[]) => string
 // Host->Plugin function hooks
 export type MangleTreeNode = (node: {Name: string, Path: string; Dir: boolean}, mangled: Mangled) => Mangled
 
-export type SortTreeNodes = (a: FileReference, b: FileReference) => number
-export type FilterTreeNode = (a: Entry) => boolean
+export type SortTreeNode = (a: FileReference, b: FileReference) => number
+export type FilterTreeNode = (a: FileReference) => boolean
 
 // Host->Plugin event hooks
 export type OnInit = () => void
@@ -50,6 +44,6 @@ export interface Plugin {
 	onTreeRefresh?: OnTreeRefresh,
 
 	mangleTreeNode?: MangleTreeNode
-	sortTreeNodes?: SortTreeNodes
+	sortTreeNode?: SortTreeNode
 	filterTreeNode?: FilterTreeNode
 }
