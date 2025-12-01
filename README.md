@@ -1,9 +1,9 @@
 # treefiddy
 ![tree fiddy](treefiddy.png)
 
-⚠  treefiddy is a work-in-progress and may have breaking changes at any point until official release ⚠
+**treefiddy** is a tree-centric and directory-rooted file explorer in the vein of an IDE's file browser/picker. Written so I could use as the file picker in [zide](https://github.com/josephschmitt/zide). Existing options didn't play well with mouse use and/or were only pseudo tree-based at best.
 
-Tree-centric and directory-rooted file explorer in the vein of an IDE's file browser/picker. Written so I could use as the file picker in [zide](https://github.com/josephschmitt/zide). Existing options didn't play well with mouse use and/or were only pseudo tree-based at best..
+⚠  treefiddy is a work-in-progress and may have breaking changes at any point until official release.
 
 ## Features
   * Tree view rooted to path provided by the first argument or cwd.
@@ -22,7 +22,6 @@ Tree-centric and directory-rooted file explorer in the vein of an IDE's file bro
       * Rename a file
     * remove
       * Remove a file
-    * Otherwise could be called "commands". These are functions that tie a keyword to an action, such as "edit" opening the selected/clicked file in your $EDITOR, or "open" opening using xdg-open.
   * Actions
     * Change what edict a mouse click does or the enter key over a file.
   * Binds
