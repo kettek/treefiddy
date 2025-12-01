@@ -3,6 +3,8 @@
 
 **treefiddy** is a tree-centric and directory-rooted file explorer in the vein of an IDE's file browser/picker. Written so I could use as the file picker in [zide](https://github.com/josephschmitt/zide). Existing options didn't play well with mouse use and/or were only pseudo tree-based at best.
 
+![screencast](screencast.gif)
+
 ⚠  treefiddy is a work-in-progress and may have breaking changes at any point until official release.
 
 ## Features
