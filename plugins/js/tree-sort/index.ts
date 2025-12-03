@@ -1,7 +1,7 @@
-import type { Plugin, Entry, FileReference } from '../treefiddy'
+import type { Entry, FileReference, Plugin } from '../treefiddy'
 
 const plugin: Plugin = {
-	sortTreeNode: function(a: FileReference, b: FileReference): number {
+	sortTreeNode: function (a: FileReference, b: FileReference): number {
 		if (a.Dir && !b.Dir) {
 			return -1
 		} else if (!a.Dir && b.Dir) {
@@ -11,7 +11,7 @@ const plugin: Plugin = {
 		const bn = b.OriginalName.toLowerCase()
 		return an.localeCompare(bn)
 	},
-	filterTreeNode: function(a: FileReference): boolean {
+	filterTreeNode: function (a: FileReference): boolean {
 		/*if (a.Name() == "node_modules") {
 			return false
 		}*/
