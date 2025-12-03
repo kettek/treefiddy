@@ -6,4 +6,4 @@ Each plugin may be built and installed from its `install` package.json script or
 Installation will place the plugins in `<config dir>/treefiddy/plugins/js/...`.
 
 ## Requirements
-  * Bun 1.3 (may work with node/npm or even deno, but entirely untested)
+  * Deno 2.4.0+
