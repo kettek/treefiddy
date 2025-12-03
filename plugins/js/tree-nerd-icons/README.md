@@ -9,5 +9,5 @@ Ensure you have a nerd font installed and enjoy.
 Build and install to treefiddy's plugins/js directory:
 
 ```bash
-bun run install
+deno task install
 ```
