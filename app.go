@@ -118,7 +118,9 @@ func (a *app) setup(dir string) {
 					}
 				}
 
-				a.RunEdict(edict, nr.Path, nil)
+				a.RunEdict(edict, EdictContext{
+					Selected: nr.Path,
+				})
 			}
 		} else {
 			// Collapse if visible, expand if collapsed.
@@ -151,7 +153,7 @@ func (a *app) setup(dir string) {
 				}
 				if (bind.Rune != rune(0) && bind.Rune == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
 					nr := a.cnode.GetReference().(types.FileReference)
-					a.RunEdict(bind.Edict, nr.Path, nil)
+					a.RunEdict(bind.Edict, EdictContext{Selected: nr.Path})
 					return nil
 				}
 			}
@@ -191,7 +193,7 @@ func (a *app) setup(dir string) {
 				}
 			}
 
-			a.RunEdict(edict, a.cnode.GetReference().(types.FileReference).Path, parts[1:])
+			a.RunEdict(edict, EdictContext{Selected: a.cnode.GetReference().(types.FileReference).Path, Arguments: parts[1:]})
 			a.SetFocus(a.tree)
 		}
 	})
@@ -329,21 +331,20 @@ func (a *app) ClearStatus() {
 	a.cmdIsStatus = false
 }
 
-func (a *app) RunEdict(edict string, selected string, args []string) (string, error) {
-	res, err := RunEdict(edict, EdictContext{
-		Root:      a.root,
-		Selected:  selected,
-		Arguments: args,
-	})
+func (a *app) RunEdict(edict string, ctx EdictContext) (EdictContext, error) {
+	ctx.Root = a.root // Maybe don't assign this here...
+	res, err := RunEdict(edict, ctx)
 	if err != nil {
 		a.Status(fmt.Sprintf("error: %s", err.Error()))
-		return "", err
+		return res, err
 	}
-	a.Status(fmt.Sprintf("%s %s", edict, res))
+	a.Status(fmt.Sprintf("%s %s", edict, res.Msg))
 	// See if we have an edict to run after this one.
 	if nextEdict, ok := a.config.Actions.PostEdictEdicts[edict]; ok {
 		// FIXME: This could infinite loop!
-		return a.RunEdict(nextEdict, selected, args)
+		next, err := a.RunEdict(nextEdict, res)
+		res.Wrap(next)
+		return res, err
 	}
 
 	a.refreshRoot() // Update tree on any edict. TODO: Maybe make this only for certain edicts?

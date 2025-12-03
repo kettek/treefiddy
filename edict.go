@@ -15,6 +15,39 @@ type EdictContext struct {
 	Root      string
 	Selected  string
 	Arguments []string
+	// Results from last edict chain.
+	Err      error
+	Msg      string
+	Previous *EdictContext
+}
+
+func (ctx *EdictContext) Wrap(c EdictContext) {
+	ctx.Previous = &EdictContext{
+		Root:      c.Root,
+		Selected:  c.Selected,
+		Arguments: c.Arguments,
+		//
+		Err:      c.Err,
+		Msg:      c.Msg,
+		Previous: c.Previous,
+	}
+}
+
+func (ctx *EdictContext) Last(msg string, err error) EdictContext {
+	ctx.Msg = msg
+	ctx.Err = err
+	return *ctx
+}
+
+func (ctx *EdictContext) Error(err error) EdictContext {
+	ctx.Err = err
+	return *ctx
+}
+
+func (ctx *EdictContext) Ok(msg string) EdictContext {
+	ctx.Err = nil
+	ctx.Msg = msg
+	return *ctx
 }
 
 func (ctx *EdictContext) TargetAbsPath() (string, error) {
@@ -38,6 +71,10 @@ func (ctx *EdictContext) AbsPathFromRel(path string) (string, error) {
 	return abs, err
 }
 
+func (ctx *EdictContext) RelPathFromAbs(path string) (string, error) {
+	return filepath.Rel(ctx.Root, path)
+}
+
 func (ctx *EdictContext) FromToAbsPath() (string, string, error) {
 	if len(ctx.Arguments) == 0 {
 		return "", "", fmt.Errorf("requires a path")
@@ -56,7 +93,7 @@ func (ctx *EdictContext) FromToAbsPath() (string, string, error) {
 }
 
 type Edict struct {
-	Run func(ctx EdictContext) (string, error)
+	Run func(ctx EdictContext) EdictContext
 }
 
 var edicts map[string]Edict
@@ -74,19 +111,20 @@ func HasEdict(name string) bool {
 	return ok
 }
 
-func RunEdict(name string, ctx EdictContext) (string, error) {
+func RunEdict(name string, ctx EdictContext) (EdictContext, error) {
 	if e, ok := edicts[name]; ok {
-		return e.Run(ctx)
+		ctx = e.Run(ctx)
+		return ctx, ctx.Err
 	}
-	return "", fmt.Errorf("missing edict \"%s\"", name)
+	return ctx, fmt.Errorf("missing edict \"%s\"", name)
 }
 
 func init() {
 	RegisterEdict("edit", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			path, err := ctx.TargetAbsPath()
 			if err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			cmd := exec.Command(os.Getenv("EDITOR"), path)
@@ -98,16 +136,16 @@ func init() {
 				Setsid: true,
 			}
 			if err := cmd.Start(); err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
-			return path, nil
+			return ctx.Ok(path)
 		},
 	})
 	RegisterEdict("open", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			path, err := ctx.TargetAbsPath()
 			if err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			program := "xdg-open"
@@ -119,93 +157,101 @@ func init() {
 			}
 
 			if err := exec.Command(program, path).Start(); err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
-			return path, nil
+			return ctx.Ok(path)
 		},
 	})
 	RegisterEdict("create", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			if len(ctx.Arguments) == 0 {
-				return "", fmt.Errorf("requires a path")
+				return ctx.Error(fmt.Errorf("requires a path"))
 			}
 
 			path, err := ctx.TargetAbsPath()
 			if err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			if _, err := os.Stat(path); err != nil && !os.IsNotExist(err) {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			if fs, err := os.Create(path); err != nil {
-				return "", err
+				return ctx.Error(err)
 			} else {
 				fs.Close()
 			}
 
-			return path, nil
+			// Modify our selected and arguments so chaining will apply to the new file.
+			lpath, err := ctx.RelPathFromAbs(path)
+			if err != nil {
+				return ctx.Error(err)
+			}
+			ctx.Arguments = nil
+			ctx.Selected = lpath
+
+			return ctx.Ok(path)
 		},
 	})
 	RegisterEdict("mkdir", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			if len(ctx.Arguments) == 0 {
-				return "", fmt.Errorf("requires a path")
+				return ctx.Error(fmt.Errorf("requires a path"))
 			}
 			var path string
 			// check if selected is a dir, and if so, we root ourself to it.
 			if fs, err := os.Stat(ctx.Selected); err != nil {
-				return "", err
+				return ctx.Error(err)
 			} else if fs.IsDir() {
 				path = filepath.Join(ctx.Selected, strings.Join(ctx.Arguments, " "))
 			} else {
 				path = filepath.Join(filepath.Dir(ctx.Selected), strings.Join(ctx.Arguments, " "))
 			}
 			abs, _ := filepath.Abs(path)
-			return abs, nil
+			return ctx.Ok(abs)
 		},
 	})
 	RegisterEdict("remove", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			path, err := ctx.TargetAbsPath()
 			if err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			err = os.Remove(path)
 
-			return path, err
+			return ctx.Last(path, err)
 		},
 	})
 	RegisterEdict("rename", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			from, to, err := ctx.FromToAbsPath()
 			if err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			if err := os.Rename(from, to); err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
-			return from + "->" + to, nil
+			return ctx.Ok(from + "->" + to)
 		},
 	})
 	RegisterEdict("trash", Edict{
-		Run: func(ctx EdictContext) (string, error) {
+		Run: func(ctx EdictContext) EdictContext {
 			path, err := ctx.TargetAbsPath()
 			if err != nil {
-				return "", err
+				return ctx.Error(err)
 			}
 
 			err = trash.Throw(path)
 
-			return path, err
+			return ctx.Last(path, err)
 		},
 	})
 }
