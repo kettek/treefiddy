@@ -1,4 +1,3 @@
-import path from 'path'
 import type { Plugin, Mangled } from '../treefiddy'
 
 interface LocalPlugin {
@@ -8,6 +7,10 @@ interface LocalPlugin {
 
 let modifiedPaths: Set<string> = new Set()
 let untrackedPaths: Set<string> = new Set()
+
+function dirname(path: string) {
+	return path.substr(0, path.lastIndexOf("/"))
+}
 
 const plugin: (Plugin & LocalPlugin) = {
 	permissions: {
@@ -23,15 +26,15 @@ const plugin: (Plugin & LocalPlugin) = {
 
 		for (let file of modifiedFiles) {
 			modifiedPaths.add(file)
-			for (let dirname = path.dirname(file); dirname != "."; dirname = path.dirname(dirname)) {
-				modifiedPaths.add(dirname)
+			for (let dname = dirname(file); dname != ""; dname = dirname(dname)) {
+				modifiedPaths.add(dname)
 			}
 		}
 
 		for (let file of untrackedFiles) {
 			untrackedPaths.add(file)
-			for (let dirname = path.dirname(file); dirname != "."; dirname = path.dirname(dirname)) {
-				untrackedPaths.add(dirname)
+			for (let dname = dirname(file); dname != ""; dname = dirname(dname)) {
+				untrackedPaths.add(dname)
 			}
 		}
 	},
