@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs from 'node:fs'
 
 const exts = await (await fetch('https://raw.githubusercontent.com/nvim-tree/nvim-web-devicons/refs/heads/master/lua/nvim-web-devicons/default/icons_by_file_extension.lua')).text()
 const exacts = await (await fetch('https://raw.githubusercontent.com/nvim-tree/nvim-web-devicons/refs/heads/master/lua/nvim-web-devicons/default/icons_by_filename.lua')).text()
