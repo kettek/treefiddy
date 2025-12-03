@@ -19,6 +19,7 @@ type System struct {
 	context  *qjs.Context
 	plugins  []Plugin
 	rplugins []registry.Plugin
+	commands registry.Commands // commands interface, should be app
 }
 
 type Plugin struct {
@@ -29,6 +30,12 @@ type Plugin struct {
 	permissions  pluginPermissions
 }
 
+func (p *Plugin) assignFunc(obj *qjs.Value, name string, jsFunc *qjs.Value) error {
+	p.valuesToFree = append(p.valuesToFree, jsFunc)
+	obj.SetPropertyStr(name, jsFunc)
+	return nil
+}
+
 type pluginPermissions struct {
 	exec []string
 }
@@ -37,13 +44,14 @@ func (s *System) Name() string {
 	return "js"
 }
 
-func (s *System) Init() error {
+func (s *System) Init(commands registry.Commands) error {
 	rt, err := qjs.New()
 	if err != nil {
 		return err
 	}
 	s.runtime = rt
 	s.context = rt.Context()
+	s.commands = commands
 
 	return nil
 }
@@ -161,6 +169,42 @@ func (s *System) LoadPlugin(name string) error {
 			}
 			plugin.valuesToFree = append(plugin.valuesToFree, execFunc)
 			val.SetPropertyStr(propName, execFunc)
+		case "refreshTree":
+			if jsFunc, err := qjs.FuncToJS(s.context, func() error {
+				s.commands.RefreshTree()
+				return nil
+			}); err != nil {
+				return err
+			} else if err := plugin.assignFunc(val, propName, jsFunc); err != nil {
+				return err
+			}
+		case "focusTree":
+			if jsFunc, err := qjs.FuncToJS(s.context, func() error {
+				s.commands.FocusTree()
+				return nil
+			}); err != nil {
+				return err
+			} else if err := plugin.assignFunc(val, propName, jsFunc); err != nil {
+				return err
+			}
+		case "focusLocation":
+			if jsFunc, err := qjs.FuncToJS(s.context, func() error {
+				s.commands.FocusTree()
+				return nil
+			}); err != nil {
+				return err
+			} else if err := plugin.assignFunc(val, propName, jsFunc); err != nil {
+				return err
+			}
+		case "focusInput":
+			if jsFunc, err := qjs.FuncToJS(s.context, func() error {
+				s.commands.FocusInput()
+				return nil
+			}); err != nil {
+				return err
+			} else if err := plugin.assignFunc(val, propName, jsFunc); err != nil {
+				return err
+			}
 		case "mangleTreeNode":
 			mangleFunc := val.GetPropertyStr(propName)
 			plugin.valuesToFree = append(plugin.valuesToFree, mangleFunc)

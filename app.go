@@ -269,7 +269,7 @@ func (a *app) setup(dir string) {
 				systemStart := time.Now()
 				status("  " + system.Name() + "\n")
 				status("    init... ")
-				if err := system.Init(); err != nil {
+				if err := system.Init(a); err != nil {
 					status(err.Error())
 				} else {
 					elapsed := time.Since(systemStart)
@@ -594,4 +594,20 @@ func (a *app) setRoot(dir string) {
 	}
 
 	a.location.SetText(filepath.Base(absdir))
+}
+
+func (a *app) RefreshTree() {
+	a.refreshRoot()
+}
+
+func (a *app) FocusTree() {
+	a.SetFocus(a.tree)
+}
+
+func (a *app) FocusLocation() {
+	a.SetFocus(a.location)
+}
+
+func (a *app) FocusInput() {
+	a.SetFocus(a.cmd)
 }

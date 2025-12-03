@@ -2,7 +2,7 @@ package registry
 
 type System interface {
 	Name() string
-	Init() error
+	Init(Commands) error
 	Deinit() error
 	PopulatePlugins() error
 	PluginNames() []string
