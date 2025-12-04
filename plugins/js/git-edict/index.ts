@@ -1,4 +1,4 @@
-import type { EdictContext, Mangled, Plugin } from '../treefiddy'
+import type { EdictContext, Plugin } from '../treefiddy'
 
 interface LocalPlugin {
 }
@@ -7,7 +7,7 @@ const plugin: Plugin & LocalPlugin = {
 	permissions: {
 		exec: ['git'],
 	},
-	exec: (cmd: string, ...args: string[]): string => {
+	exec: (_cmd: string, ..._args: string[]): string => {
 		return ''
 	},
 	edicts: {

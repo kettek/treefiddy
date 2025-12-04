@@ -11,7 +11,7 @@ const plugin: Plugin = {
 		const bn = b.OriginalName.toLowerCase()
 		return an.localeCompare(bn)
 	},
-	filterTreeNode: function (a: FileReference): boolean {
+	filterTreeNode: function (_a: FileReference): boolean {
 		/*if (a.Name() == "node_modules") {
 			return false
 		}*/

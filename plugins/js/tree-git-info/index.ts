@@ -10,14 +10,14 @@ let untrackedPaths: Set<string> = new Set()
 let stagedPaths: Set<string> = new Set()
 
 function dirname(path: string) {
-	return path.substr(0, path.lastIndexOf('/'))
+	return path.substring(0, path.lastIndexOf('/'))
 }
 
 const plugin: Plugin & LocalPlugin = {
 	permissions: {
 		exec: ['git'],
 	},
-	exec: (cmd: string, ...args: string[]): string => {
+	exec: (_cmd: string, ..._args: string[]): string => {
 		return ''
 	},
 	refreshFiles: function () {
