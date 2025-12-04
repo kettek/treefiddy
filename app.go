@@ -186,14 +186,16 @@ func (a *app) setup(dir string) {
 
 			// Use the first argument for edict command but also run through our shortcuts to see if it matches any of those.
 			edict := parts[0]
+			var arguments []string
 			for _, shortcut := range a.config.Shortcuts {
 				if shortcut.Keyword == edict {
 					edict = shortcut.Edict
+					arguments = append(arguments, shortcut.Arguments...)
 					break
 				}
 			}
 
-			a.RunEdict(edict, types.EdictContext{Selected: a.cnode.GetReference().(types.FileReference).Path, Arguments: parts[1:]})
+			a.RunEdict(edict, types.EdictContext{Selected: a.cnode.GetReference().(types.FileReference).Path, Arguments: append(arguments, parts[1:]...)})
 			a.SetFocus(a.tree)
 		}
 	})

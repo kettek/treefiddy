@@ -28,8 +28,9 @@ type Actions struct {
 type Shortcuts []Shortcut
 
 type Shortcut struct {
-	Edict   string
-	Keyword string
+	Edict     string
+	Arguments []string
+	Keyword   string
 }
 
 type Binds []Bind
