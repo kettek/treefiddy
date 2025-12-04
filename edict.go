@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/hymkor/trash-go"
+	"github.com/kettek/treefiddy/internal"
 )
 
 type EdictContext struct {
@@ -127,15 +126,7 @@ func init() {
 				return ctx.Error(err)
 			}
 
-			cmd := exec.Command(os.Getenv("EDITOR"), path)
-			cmd.Env = os.Environ()
-			cmd.Stdin = nil
-			cmd.Stdout = nil
-			cmd.Stderr = nil
-			cmd.SysProcAttr = &syscall.SysProcAttr{
-				Setsid: true,
-			}
-			if err := cmd.Start(); err != nil {
+			if err := internal.Exec(os.Getenv("EDITOR"), path); err != nil {
 				return ctx.Error(err)
 			}
 			return ctx.Ok(path)
@@ -148,15 +139,7 @@ func init() {
 				return ctx.Error(err)
 			}
 
-			program := "xdg-open"
-			// First check if "xdg-open" is available.
-			_, err = exec.LookPath("xdg-open")
-			// Otherwise default to "open".
-			if err != nil {
-				program = "open"
-			}
-
-			if err := exec.Command(program, path).Start(); err != nil {
+			if err := internal.Open(path); err != nil {
 				return ctx.Error(err)
 			}
 			return ctx.Ok(path)
