@@ -1,6 +1,6 @@
-# tree-get-info
+# git-edict
 
-This plugin provides showing git file status in their node listing.
+This plugin provides a `git` edict that adds staging/unstaging via `git add`/`git stage` and `git unstage`. It always operates on the selected file. 
 
 ---
 
