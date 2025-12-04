@@ -11,6 +11,8 @@ export interface Plugin {
 // Plugin->Host function hooks. These are stubs that must exist on the plugin for the host to populate them with the appropriate callback functions.
 	// exec calls an arbitrary command on the host system. Permissions to run specific commands must be specified in the permissions.exec plugin field.
 	exec?: (cmd: string, ...args: string[]) => string,
+	// popup causes a popup to appear with the given message text.
+	popup?: (msg: string) => void,
 	// refreshTree refreshes the tree.
 	refreshTree?: () => void,
 	// focusTree focuses the file tree.

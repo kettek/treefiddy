@@ -5,4 +5,5 @@ type Commands interface {
 	FocusTree()
 	FocusLocation()
 	FocusInput()
+	Popup(string)
 }

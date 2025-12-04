@@ -19,6 +19,9 @@ import (
 type app struct {
 	*tview.Application
 	root        string
+	pages       *tview.Pages
+	info        *tview.TextView
+	popup       *tview.Flex
 	location    *tview.InputField
 	tree        *tview.TreeView
 	rootNode    *tview.TreeNode
@@ -232,7 +235,7 @@ func (a *app) setup(dir string) {
 	grid.AddItem(a.tree, 1, 0, 1, 1, 1, 1, true)
 	grid.AddItem(a.cmd, 2, 0, 1, 1, 1, 1, false)
 
-	modal := func(p tview.Primitive) tview.Primitive {
+	modal := func(p tview.Primitive) *tview.Flex {
 		return tview.NewFlex().
 			AddItem(nil, 0, 1, false).
 			AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
@@ -244,25 +247,35 @@ func (a *app) setup(dir string) {
 
 	a.tree.SetRoot(a.rootNode)
 
-	info := tview.NewTextView()
-	info.SetBorder(true)
+	a.info = tview.NewTextView()
+	a.info.SetBorder(true)
 
-	pages := tview.NewPages().
+	a.popup = modal(a.info)
+
+	a.pages = tview.NewPages().
 		AddPage("picker", grid, true, true).
-		AddPage("modal", modal(info), true, false)
+		AddPage("modal", a.popup, true, false)
 
-	a.SetRoot(pages, true)
+	a.SetRoot(a.pages, true)
 
-	pages.ShowPage("modal")
-	info.SetText("Starting...")
+	a.pages.ShowPage("modal")
+	a.info.SetText("Starting...")
+
+	// Let's set up some app-specific edicts.
+	RegisterEdict("fold-all", Edict{
+		Run: func(ctx types.EdictContext) types.EdictContext {
+			a.rootNode.CollapseAll()
+			return ctx
+		},
+	})
 
 	go func() {
 		text := ""
 		status := func(v string) {
 			text += v
 			a.QueueUpdateDraw(func() {
-				info.SetText(text)
-				info.ScrollToEnd()
+				a.info.SetText(text)
+				a.info.ScrollToEnd()
 			})
 		}
 		// Plugin shenanigans.
@@ -317,7 +330,27 @@ func (a *app) setup(dir string) {
 		}
 		a.QueueUpdateDraw(func() {
 			a.setRoot(dir)
-			pages.HidePage("modal")
+			a.pages.HidePage("modal")
+
+			a.popup.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+				if event.Key() == tcell.KeyEscape || event.Key() == tcell.KeyTab {
+					a.pages.HidePage("modal")
+					return nil
+				}
+				return event
+			})
+		})
+	}()
+}
+
+func (a *app) Popup(v string) {
+	// This gofunc is being used because I'm lazy.
+	go func() {
+		a.QueueUpdateDraw(func() {
+			a.pages.ShowPage("modal")
+			a.info.SetText(v)
+			a.info.ScrollToBeginning()
+			a.SetFocus(a.popup)
 		})
 	}()
 }

@@ -216,6 +216,16 @@ func (s *System) LoadPlugin(name string) error {
 			}
 			plugin.valuesToFree = append(plugin.valuesToFree, execFunc)
 			val.SetPropertyStr(propName, execFunc)
+		case "popup":
+			jsFunc, err := qjs.FuncToJS(s.context, func(v string) error {
+				s.commands.Popup(v)
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+			plugin.valuesToFree = append(plugin.valuesToFree, jsFunc)
+			val.SetPropertyStr(propName, jsFunc)
 		case "refreshTree":
 			if jsFunc, err := qjs.FuncToJS(s.context, func() error {
 				s.commands.RefreshTree()
