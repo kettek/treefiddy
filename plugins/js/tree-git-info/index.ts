@@ -7,6 +7,7 @@ interface LocalPlugin {
 
 let modifiedPaths: Set<string> = new Set()
 let untrackedPaths: Set<string> = new Set()
+let stagedPaths: Set<string> = new Set()
 
 function dirname(path: string) {
 	return path.substr(0, path.lastIndexOf('/'))
@@ -22,11 +23,16 @@ const plugin: Plugin & LocalPlugin = {
 	refreshFiles: function () {
 		modifiedPaths.clear()
 		untrackedPaths.clear()
+		stagedPaths.clear()
 
 		const modifiedFiles = plugin.exec?.('git', 'ls-files', '-m', '--exclude-standard').split(
 			'\n',
 		) ?? []
 		const untrackedFiles = plugin.exec?.('git', 'ls-files', '-o', '--exclude-standard').split(
+			'\n',
+		) ?? []
+		const stagedFiles = plugin.exec?.('git', 'diff', '--name-only', '--cached')
+			.split(
 			'\n',
 		) ?? []
 
@@ -43,6 +49,10 @@ const plugin: Plugin & LocalPlugin = {
 				untrackedPaths.add(dname)
 			}
 		}
+
+		for (let file of stagedFiles) {
+			stagedPaths.add(file)
+		}
 	},
 	onTreeRefresh: function () {
 		plugin.refreshFiles()
@@ -52,6 +62,10 @@ const plugin: Plugin & LocalPlugin = {
 		mangled: Mangled,
 	): Mangled {
 		mangled.Color = plugin.adjustColor(node.Path)
+		if (stagedPaths.has(node.Path)) {
+			mangled.Suffix = ' A'
+			mangled.SuffixColor = 'gray'
+		}
 		return mangled
 	},
 	adjustColor: function (path: string): string {
