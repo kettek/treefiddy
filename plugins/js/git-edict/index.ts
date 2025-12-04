@@ -10,6 +10,7 @@ const plugin: Plugin & LocalPlugin = {
 	exec: (_cmd: string, ..._args: string[]): string => {
 		return ''
 	},
+	popup: (_v: string) => {},
 	edicts: {
 		"git": (ctx: EdictContext): EdictContext => {
 			switch (ctx.Arguments[0]) {
@@ -19,6 +20,9 @@ const plugin: Plugin & LocalPlugin = {
 					break
 				case 'unstage':
 					plugin.exec?.('git', 'restore', '--staged', ctx.Selected)
+					break
+				case 'diff':
+					plugin.popup?.(plugin.exec?.('git', 'diff', ctx.Selected))
 					break
 			}
 			return ctx
