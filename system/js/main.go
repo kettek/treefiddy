@@ -2,6 +2,7 @@
 package js
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -128,6 +129,52 @@ func (s *System) LoadPlugin(name string) error {
 
 	for _, propName := range propNames {
 		switch propName {
+		case "edicts":
+			edicts := val.GetPropertyStr(propName)
+			defer edicts.Free()
+			edictNames, err := edicts.GetOwnPropertyNames()
+			if err != nil {
+				return err
+			}
+			plugin.Edicts = make(map[string]registry.EdictFunc)
+			for _, edictName := range edictNames {
+				edictFunc := edicts.GetPropertyStr(edictName)
+				plugin.valuesToFree = append(plugin.valuesToFree, edictFunc)
+
+				goEdictFunc, err := qjs.JsFuncToGo[func(types.EdictContext) (map[string]any, error)](edictFunc)
+				if err != nil {
+					return err
+				}
+				efn := func(ctx types.EdictContext) types.EdictContext {
+					res, err := goEdictFunc(ctx)
+					if err != nil {
+						ctx.Err = err
+						return ctx
+					}
+					var ctx2 types.EdictContext
+					for k, v := range res {
+						switch k {
+						case "Root":
+							ctx2.Root = v.(string)
+						case "Selected":
+							ctx2.Selected = v.(string)
+						case "Arguments":
+							for _, v2 := range res["Arguments"].([]any) {
+								ctx2.Arguments = append(ctx2.Arguments, v2.(string))
+							}
+						case "Err":
+							if v != nil {
+								ctx2.Err = errors.New(v.(string))
+							}
+						case "Msg":
+							ctx2.Msg = v.(string)
+						}
+					}
+					ctx2.Previous = &ctx
+					return ctx2
+				}
+				plugin.Edicts[edictName] = efn
+			}
 		case "permissions":
 			perms := val.GetPropertyStr(propName)
 			defer perms.Free()

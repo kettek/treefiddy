@@ -1,10 +1,13 @@
 package registry
 
+import "maps"
+
 func RefreshPluginFuncs() {
 	PluginOnTreeRefreshFuncs = nil
 	PluginTreeNodeMangleFuncs = nil
 	PluginTreeSortFuncs = nil
 	PluginTreeFilterFuncs = nil
+	PluginEdicts = make(map[string]EdictFunc)
 
 	for _, system := range systems {
 		for _, plugin := range system.Plugins() {
@@ -20,6 +23,9 @@ func RefreshPluginFuncs() {
 			if plugin.TreeFilter != nil {
 				PluginTreeFilterFuncs = append(PluginTreeFilterFuncs, plugin.TreeFilter)
 			}
+			if plugin.Edicts != nil {
+				maps.Copy(PluginEdicts, plugin.Edicts)
+			}
 		}
 	}
 }
@@ -29,4 +35,5 @@ var (
 	PluginTreeNodeMangleFuncs []TreeNodeMangleFunc
 	PluginTreeSortFuncs       []TreeSortFunc
 	PluginTreeFilterFuncs     []TreeFilterFunc
+	PluginEdicts              map[string]EdictFunc
 )

@@ -118,7 +118,7 @@ func (a *app) setup(dir string) {
 					}
 				}
 
-				a.RunEdict(edict, EdictContext{
+				a.RunEdict(edict, types.EdictContext{
 					Selected: nr.Path,
 				})
 			}
@@ -153,7 +153,7 @@ func (a *app) setup(dir string) {
 				}
 				if (bind.Rune != rune(0) && bind.Rune == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
 					nr := a.cnode.GetReference().(types.FileReference)
-					a.RunEdict(bind.Edict, EdictContext{Selected: nr.Path})
+					a.RunEdict(bind.Edict, types.EdictContext{Selected: nr.Path})
 					return nil
 				}
 			}
@@ -193,7 +193,7 @@ func (a *app) setup(dir string) {
 				}
 			}
 
-			a.RunEdict(edict, EdictContext{Selected: a.cnode.GetReference().(types.FileReference).Path, Arguments: parts[1:]})
+			a.RunEdict(edict, types.EdictContext{Selected: a.cnode.GetReference().(types.FileReference).Path, Arguments: parts[1:]})
 			a.SetFocus(a.tree)
 		}
 	})
@@ -331,7 +331,7 @@ func (a *app) ClearStatus() {
 	a.cmdIsStatus = false
 }
 
-func (a *app) RunEdict(edict string, ctx EdictContext) (EdictContext, error) {
+func (a *app) RunEdict(edict string, ctx types.EdictContext) (types.EdictContext, error) {
 	ctx.Root = a.root // Maybe don't assign this here...
 	res, err := RunEdict(edict, ctx)
 	if err != nil {

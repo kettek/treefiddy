@@ -6,17 +6,19 @@ export interface Plugin {
 		exec?: string[],
 	},
 
+	edicts?: Record<string, (ctx: EdictContext) => EdictContext>,
+
 // Plugin->Host function hooks. These are stubs that must exist on the plugin for the host to populate them with the appropriate callback functions.
 	// exec calls an arbitrary command on the host system. Permissions to run specific commands must be specified in the permissions.exec plugin field.
 	exec?: (cmd: string, ...args: string[]) => string,
 	// refreshTree refreshes the tree.
-	refreshTree?: func() => void,
+	refreshTree?: () => void,
 	// focusTree focuses the file tree.
-	focusTree?: func() => void,
+	focusTree?: () => void,
 	// focusLocation focuses the location field.
-	focusLocation?: func() => void,
+	focusLocation?: () => void,
 	// focusInput focuses the input/status field.
-	focusInput?: func() => void,
+	focusInput?: () => void,
 
 	periodics?: PeriodicFunc[],
 
@@ -51,6 +53,15 @@ export type Mangled = {
 	PrefixColor: string
 	Suffix: string
 	SuffixColor: string
+}
+
+export type EdictContext = {
+	Root:      string
+	Selected:  string
+	Arguments: string[]
+	Err:      string
+	Msg: string
+	Previous: EdictContext
 }
 
 export type PeriodicFunc = {
