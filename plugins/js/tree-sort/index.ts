@@ -1,4 +1,4 @@
-import type { Entry, FileReference, Plugin } from '../treefiddy'
+import type { FileReference, Plugin } from '../treefiddy'
 
 const plugin: Plugin = {
 	sortTreeNode: function (a: FileReference, b: FileReference): number {
