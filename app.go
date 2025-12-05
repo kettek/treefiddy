@@ -588,7 +588,7 @@ func (a *app) refreshRoot() {
 	// Refresh any registered.
 	for _, fn := range registry.PluginOnTreeRefreshFuncs {
 		if err := fn(); err != nil {
-			panic(err)
+			a.Status(err.Error())
 		}
 	}
 	a.syncNode(a.tree.GetRoot(), ".", true)
