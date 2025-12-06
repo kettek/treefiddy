@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Actions   Actions
 	Binds     Binds
+	Modes     Modes
 	Shortcuts Shortcuts
 	UseMouse  bool    `yaml:"use_mouse"`
 	Systems   Systems `yaml:"systems"`
@@ -39,12 +40,23 @@ type Bind struct {
 	Edict     string   `yaml:"edict,omitempty"`
 	Arguments []string `yaml:"arguments,omitempty"`
 	Key       int      `yaml:"key,omitempty"`
-	Rune      rune     `yaml:"rune,omitempty"`
+	Rune      string   `yaml:"rune,omitempty"`
 }
 
+type Modes map[string]Mode
+
 type Mode struct {
-	Rune  rune  `yaml:"rune,omitempty"`
-	Binds Binds `yaml:"binds,omitempty"`
+	Rune  string `yaml:"rune,omitempty"`
+	Binds Binds  `yaml:"binds,omitempty"`
+}
+
+func (m *Mode) GetBind(r rune) *Bind {
+	for _, b := range m.Binds {
+		if rune(b.Rune[0]) == r {
+			return &b
+		}
+	}
+	return nil
 }
 
 var (
@@ -72,12 +84,16 @@ var defaultConfig = Config{
 	},
 	Binds: []Bind{
 		{
+			Edict: "quit",
+			Rune:  "q",
+		},
+		{
 			Edict: "edit",
-			Rune:  'e',
+			Rune:  "e",
 		},
 		{
 			Edict: "open",
-			Rune:  'o',
+			Rune:  "o",
 		},
 	},
 	UseMouse: true,

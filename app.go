@@ -30,6 +30,8 @@ type app struct {
 
 	config Config
 
+	mode *Mode
+
 	cnode                        *tview.TreeNode
 	lastKeyPress, lastMousePress time.Time
 }
@@ -142,6 +144,38 @@ func (a *app) setup(dir string) {
 
 	a.tree.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		a.lastKeyPress = event.When()
+
+		// Handle modez.
+		if a.mode != nil {
+			if bind := a.mode.GetBind(event.Rune()); bind != nil && bind.Edict != "" {
+				nr := a.cnode.GetReference().(types.FileReference)
+				var arguments []string
+				arguments = append(arguments, bind.Arguments...)
+				a.RunEdict(bind.Edict, types.EdictContext{Selected: nr.Path, Arguments: arguments})
+				a.Status(fmt.Sprintf("%s %v %s", bind.Edict, bind.Arguments, nr.Path))
+			} else {
+				a.ClearStatus()
+			}
+			a.mode = nil
+			return nil
+		} else {
+			for k, m := range a.config.Modes {
+				if rune(m.Rune[0]) == event.Rune() {
+					a.mode = &m
+					var str string
+					for i, v := range m.Binds {
+						str += fmt.Sprintf("%s %v", v.Rune, v.Arguments)
+						if i != len(m.Binds)-1 {
+							str += " | "
+						}
+					}
+					a.Status(fmt.Sprintf("MODE: %s > %s", k, str))
+					return nil
+				}
+			}
+		}
+
+		// Truck on normally.
 		if event.Key() == tcell.KeyTab {
 			a.SetFocus(a.cmd)
 			return nil
@@ -154,7 +188,7 @@ func (a *app) setup(dir string) {
 				if bind.Edict == "" {
 					continue
 				}
-				if (bind.Rune != rune(0) && bind.Rune == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
+				if (bind.Rune != "" && rune(bind.Rune[0]) == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
 					nr := a.cnode.GetReference().(types.FileReference)
 					a.RunEdict(bind.Edict, types.EdictContext{Selected: nr.Path})
 					return nil
@@ -265,6 +299,12 @@ func (a *app) setup(dir string) {
 	RegisterEdict("fold-all", Edict{
 		Run: func(ctx types.EdictContext) types.EdictContext {
 			a.rootNode.CollapseAll()
+			return ctx
+		},
+	})
+	RegisterEdict("quit", Edict{
+		Run: func(ctx types.EdictContext) types.EdictContext {
+			a.Stop()
 			return ctx
 		},
 	})
