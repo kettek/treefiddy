@@ -36,9 +36,15 @@ type Shortcut struct {
 type Binds []Bind
 
 type Bind struct {
-	Edict string `yaml:"edict,omitempty"`
-	Key   int    `yaml:"key,omitempty"`
-	Rune  rune   `yaml:"rune,omitempty"`
+	Edict     string   `yaml:"edict,omitempty"`
+	Arguments []string `yaml:"arguments,omitempty"`
+	Key       int      `yaml:"key,omitempty"`
+	Rune      rune     `yaml:"rune,omitempty"`
+}
+
+type Mode struct {
+	Rune  rune  `yaml:"rune,omitempty"`
+	Binds Binds `yaml:"binds,omitempty"`
 }
 
 var (
