@@ -1,4 +1,4 @@
-package main
+package types
 
 import (
 	"os"
@@ -102,7 +102,7 @@ var defaultConfig = Config{
 	},
 }
 
-func ensureConfig() (cfg Config) {
+func EnsureConfig() (cfg Config) {
 	cdir, err := os.UserConfigDir()
 	if err != nil {
 		panic(err)

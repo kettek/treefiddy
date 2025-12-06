@@ -28,9 +28,9 @@ type app struct {
 	cmd         *tview.InputField
 	cmdIsStatus bool
 
-	config Config
+	config types.Config
 
-	mode *Mode
+	mode *types.Mode
 
 	cnode                        *tview.TreeNode
 	lastKeyPress, lastMousePress time.Time
@@ -48,7 +48,7 @@ func newApp() app {
 
 func (a *app) setup(dir string) {
 	// Grab that config.
-	a.config = ensureConfig()
+	a.config = types.EnsureConfig()
 
 	a.EnableMouse(a.config.UseMouse)
 
