@@ -1,8 +1,14 @@
-import type { Mangled, Plugin } from '../treefiddy'
+import type { Config, Mangled, Plugin } from '../treefiddy'
 
 interface LocalPlugin {
 	adjustColor: (path: string) => string
 	refreshFiles: () => void
+	config: Config & {
+		modifiedColor: string
+		untrackedColor: string
+		stagedSuffix: string
+		stagedSuffixColor: string
+	}
 }
 
 let modifiedPaths: Set<string> = new Set()
@@ -14,6 +20,12 @@ function dirname(path: string) {
 }
 
 const plugin: Plugin & LocalPlugin = {
+	config: {
+		modifiedColor: 'yellow',
+		untrackedColor: 'green',
+		stagedSuffix: ' +',
+		stagedSuffixColor: 'gray',
+	},
 	permissions: {
 		exec: ['git'],
 	},
@@ -63,16 +75,16 @@ const plugin: Plugin & LocalPlugin = {
 	): Mangled {
 		mangled.Color = plugin.adjustColor(node.Path)
 		if (stagedPaths.has(node.Path)) {
-			mangled.Suffix = ' A'
-			mangled.SuffixColor = 'gray'
+			mangled.Suffix = plugin.config.stagedSuffix
+			mangled.SuffixColor = plugin.config.stagedSuffixColor
 		}
 		return mangled
 	},
 	adjustColor: function (path: string): string {
 		if (modifiedPaths.has(path)) {
-			return 'yellow'
+			return plugin.config.modifiedColor
 		} else if (untrackedPaths.has(path)) {
-			return 'green'
+			return plugin.config.untrackedColor
 		}
 		return ''
 	},

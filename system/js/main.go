@@ -13,6 +13,7 @@ import (
 	"github.com/fastschema/qjs"
 	"github.com/kettek/treefiddy/system/registry"
 	"github.com/kettek/treefiddy/types"
+	"go.yaml.in/yaml/v4"
 )
 
 type System struct {
@@ -129,6 +130,33 @@ func (s *System) LoadPlugin(name string) error {
 
 	for _, propName := range propNames {
 		switch propName {
+		case "config":
+			configs := val.GetPropertyStr(propName)
+			defer configs.Free()
+			// configFields, err := configs.GetOwnPropertyNames()
+			cfgPath := filepath.Join(filepath.Dir(plugin.path), "config.yaml")
+
+			// Read it up.
+			bytes, err := os.ReadFile(cfgPath)
+			if err != nil && !os.IsNotExist(err) {
+				panic(err)
+			}
+			// First try to load binds, etc.
+			if err := yaml.Unmarshal(bytes, &plugin.Config); err != nil {
+				panic(err)
+			}
+			// Re-read into a generic map and copy values to plugin's config field.
+			var raw map[string]any
+			if err := yaml.Unmarshal(bytes, &raw); err != nil {
+				panic(err)
+			}
+			for k, v := range raw {
+				val, err := qjs.ToJsValue(s.context, v)
+				if err != nil {
+					panic(err)
+				}
+				configs.SetPropertyStr(k, val)
+			}
 		case "edicts":
 			edicts := val.GetPropertyStr(propName)
 			defer edicts.Free()

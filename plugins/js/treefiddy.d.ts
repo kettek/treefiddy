@@ -1,5 +1,9 @@
 export interface Plugin {
 // settings
+
+	// config is the configuration for a plugin. Defaults may be defined by populating this field. This field is merged with values defined in the plugin's config.yaml file.
+	config?: Config,
+		 
 	// permissions indicate to the host what permissions the plugin seeks.
 	permissions?: {
 		// exec is a list of operating system commands the plugin wishes to use. These _must_ be specified if the exec function is to be used. If an item does not exist in this list or the user denies the permissions, then exec will not be able to call that item.
@@ -64,6 +68,25 @@ export type EdictContext = {
 	Err:      string
 	Msg: string
 	Previous: EdictContext
+}
+
+export type Bind = {
+	Edict: string
+	Arguments?: string[]
+	Rune?: string
+	Key?: number
+}
+
+export type Modes = Record<string, Mode>
+
+export type Mode = {
+	Rune: string
+	Binds: Bind[]
+}
+
+export type Config = {
+		binds?: Record<string, any>,
+		modes?: Modes,
 }
 
 export type PeriodicFunc = {

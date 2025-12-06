@@ -30,4 +30,11 @@ type Plugin struct {
 	Edicts map[string]EdictFunc
 
 	Periodics []Periodic
+
+	Config PluginConfig
+}
+
+type PluginConfig struct {
+	Binds types.Binds
+	Modes types.Modes
 }
