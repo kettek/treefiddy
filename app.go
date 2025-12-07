@@ -302,6 +302,12 @@ func (a *app) setup(dir string) {
 			return ctx
 		},
 	})
+	RegisterEdict("refresh", Edict{
+		Run: func(ctx types.EdictContext) types.EdictContext {
+			a.refreshRoot()
+			return ctx
+		},
+	})
 	RegisterEdict("quit", Edict{
 		Run: func(ctx types.EdictContext) types.EdictContext {
 			a.Stop()
