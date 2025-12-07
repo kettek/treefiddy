@@ -8,6 +8,7 @@ type System interface {
 	PluginNames() []string
 	LoadPlugin(name string) error
 	Plugins() []Plugin
+	WritePluginConfig(name string) error
 }
 
 var systems []System

@@ -308,6 +308,30 @@ func (a *app) setup(dir string) {
 			return ctx
 		},
 	})
+	RegisterEdict("plugin", Edict{
+		Run: func(ctx types.EdictContext) types.EdictContext {
+			if len(ctx.Arguments) < 2 {
+				return ctx
+			}
+			switch ctx.Arguments[0] {
+			case "save":
+				var err error
+				found := false
+				for _, system := range registry.Systems() {
+					if err = system.WritePluginConfig(ctx.Arguments[1]); err == nil {
+						found = true
+						break
+					}
+				}
+				if found {
+					a.Status(fmt.Sprintf("saved %s", ctx.Arguments[0]))
+				} else {
+					a.Status(err.Error())
+				}
+			}
+			return ctx
+		},
+	})
 
 	go func() {
 		text := ""

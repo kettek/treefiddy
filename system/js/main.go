@@ -19,17 +19,18 @@ import (
 type System struct {
 	runtime  *qjs.Runtime
 	context  *qjs.Context
-	plugins  []Plugin
+	plugins  []*Plugin
 	rplugins []registry.Plugin
 	commands registry.Commands // commands interface, should be app
 }
 
 type Plugin struct {
 	registry.Plugin
-	name         string
-	path         string
-	valuesToFree []*qjs.Value
-	permissions  pluginPermissions
+	name          string
+	path          string
+	valuesToFree  []*qjs.Value
+	permissions   pluginPermissions
+	defaultConfig map[string]any
 }
 
 func (p *Plugin) assignFunc(obj *qjs.Value, name string, jsFunc *qjs.Value) error {
@@ -73,12 +74,12 @@ func (s *System) PopulatePlugins() error {
 				if _, err := os.Stat(filepath.Join(systemDir, entry.Name(), "index.js")); err != nil {
 					return err
 				}
-				s.plugins = append(s.plugins, Plugin{
+				s.plugins = append(s.plugins, &Plugin{
 					name: entry.Name(),
 					path: filepath.Join(systemDir, entry.Name(), "index.js"),
 				})
 			} else if strings.HasSuffix(entry.Name(), ".js") {
-				s.plugins = append(s.plugins, Plugin{
+				s.plugins = append(s.plugins, &Plugin{
 					name: entry.Name()[:len(entry.Name())-len(filepath.Ext(entry.Name()))],
 					path: filepath.Join(systemDir, entry.Name()),
 				})
@@ -100,7 +101,7 @@ func (s *System) LoadPlugin(name string) error {
 	var plugin *Plugin
 	for _, p := range s.plugins {
 		if p.name == name {
-			plugin = &p
+			plugin = p
 		}
 	}
 
@@ -133,7 +134,18 @@ func (s *System) LoadPlugin(name string) error {
 		case "config":
 			configs := val.GetPropertyStr(propName)
 			defer configs.Free()
-			// configFields, err := configs.GetOwnPropertyNames()
+
+			// Read config and store as default for future writing.
+			// It feels goofy to JSONStringify and then re-unmarshal to YAML, but I can't get qjs to return map[string]any.
+			json, err := configs.JSONStringify()
+			if err != nil {
+				panic(err)
+			}
+			err = yaml.Unmarshal([]byte(json), &plugin.defaultConfig)
+			if err != nil {
+				panic(err)
+			}
+
 			cfgPath := filepath.Join(filepath.Dir(plugin.path), "config.yaml")
 
 			// Read it up.
@@ -354,7 +366,30 @@ func (s *System) LoadPlugin(name string) error {
 	return nil
 }
 
-func (s *System) unloadPlugin(plugin Plugin) {
+func (s *System) WritePluginConfig(name string) error {
+	for _, plugin := range s.plugins {
+		if plugin.name != name {
+			continue
+		}
+		if plugin.defaultConfig == nil {
+			// Not doin' that, chief.
+			continue
+		}
+		cfgPath := filepath.Join(filepath.Dir(plugin.path), "config.yaml")
+
+		bytes, err := yaml.Marshal(plugin.defaultConfig)
+		if err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile(cfgPath, bytes, 0o644); err != nil {
+			panic(err)
+		}
+		return nil
+	}
+	return fmt.Errorf("plugin %s does not exist", name)
+}
+
+func (s *System) unloadPlugin(plugin *Plugin) {
 	for _, val := range plugin.valuesToFree {
 		val.Free()
 	}

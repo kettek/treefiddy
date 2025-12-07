@@ -21,8 +21,10 @@
 ## Configuration
 Upon starting, `~/.config/treefiddy/config.yaml` (or whatever your XDG config dir is) is created with the defaults. See `config.go` for current options.
 
+Plugins may also be configured via their `~/.config/treefiddy/plugins/<system>/<plugin>/config.yaml` file. A plugin's default configuration, if one exists, may be created by issuing the `plugin save <name>` edict.
+
 ## Edicts
-Edicts are commands that are executed by user input or through other edicts or plugins. These are broadly location-aware, meaning they'll use the current selection location for directory unless absolute paths are given. For exampl,e `edit foo.go` while in `my/dir` will resolve to `edit my/dir/foo.go`.
+Edicts are commands that are executed by user input or through other edicts or plugins. These are broadly location-aware, meaning they'll use the current selection location for directory unless absolute paths are given. For example, `edit foo.go` while in `my/dir` will resolve to `edit my/dir/foo.go`.
 
   * `edit` or `edit <file>`
     * Open file in the current `$EDITOR`
