@@ -1,0 +1,15 @@
+{
+	"tasks": {
+		"build": "deno bundle --minify --outdir dist ./index.ts",
+		"clean-install": {
+			"command": "rm -rf $(deno run --allow-env --allow-sys ../get_install_dir.ts)"
+		},
+		"install": {
+			"command": "mkdir -p $(deno run --allow-env --allow-sys ../get_install_dir.ts) && cp -r dist/* $(deno run --allow-env --allow-sys ../get_install_dir.ts)",
+			"dependencies": ["build", "clean-install"]
+		}
+	},
+	"imports": {
+		"@std/assert": "jsr:@std/assert@1"
+	}
+}

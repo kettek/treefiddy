@@ -2,30 +2,18 @@ import type { Config, FileReference, Plugin } from '../treefiddy'
 
 interface LocalPlugin {
 	config: Config & {
-		directoriesFirst: boolean
+		filterFiles: string[],
 	}
 }
 
 const plugin: Plugin & LocalPlugin = {
 	config: {
-		directoriesFirst: true,
+		filterFiles: [],
 	},
-	sortTreeNode: function (a: FileReference, b: FileReference): number {
-		if (plugin.config.directoriesFirst) {
-			if (a.Dir && !b.Dir) {
-				return -1
-			} else if (!a.Dir && b.Dir) {
-				return 1
-			}
-		}
-		const an = a.OriginalName.toLowerCase()
-		const bn = b.OriginalName.toLowerCase()
-		return an.localeCompare(bn)
-	},
-	filterTreeNode: function (_a: FileReference): boolean {
-		/*if (a.Name() == "node_modules") {
+	filterTreeNode: function (file: FileReference): boolean {
+		if (plugin.config.filterFiles.includes(file.OriginalName)) {
 			return false
-		}*/
+		}
 		return true
 	},
 }
