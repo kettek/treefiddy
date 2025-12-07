@@ -4,6 +4,30 @@ interface LocalPlugin {
 }
 
 const plugin: Plugin & LocalPlugin = {
+	config: {
+		modes: {
+			git: {
+				rune: 'g',
+				binds: [
+					{
+						edict: 'git',
+						rune: 'a',
+						arguments: ['stage']
+					},
+					{
+						edict: 'git',
+						rune: 'r',
+						arguments: ['unstage']
+					},
+					{
+						edict: 'git',
+						rune: 'd',
+						arguments: ['diff']
+					},
+				]
+			}
+		},
+	},
 	permissions: {
 		exec: ['git'],
 	},

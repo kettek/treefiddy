@@ -71,17 +71,17 @@ export type EdictContext = {
 }
 
 export type Bind = {
-	Edict: string
-	Arguments?: string[]
-	Rune?: string
-	Key?: number
+	edict: string
+	arguments?: string[]
+	rune?: string
+	key?: number
 }
 
 export type Modes = Record<string, Mode>
 
 export type Mode = {
-	Rune: string
-	Binds: Bind[]
+	rune: string
+	binds: Bind[]
 }
 
 export type Config = {

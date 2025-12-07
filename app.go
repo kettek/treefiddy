@@ -159,19 +159,16 @@ func (a *app) setup(dir string) {
 			a.mode = nil
 			return nil
 		} else {
-			for k, m := range a.config.Modes {
-				if rune(m.Rune[0]) == event.Rune() {
-					a.mode = &m
-					var str string
-					for i, v := range m.Binds {
-						str += fmt.Sprintf("%s %v", v.Rune, v.Arguments)
-						if i != len(m.Binds)-1 {
-							str += " | "
-						}
-					}
-					a.Status(fmt.Sprintf("MODE: %s > %s", k, str))
-					return nil
-				}
+			// First cheque our plugin binds for any defined modes.
+			if m, str := a.checkModes(registry.PluginModes, event); m != nil {
+				a.mode = m
+				a.Status(str)
+				return nil
+				// Second go through our base config for modes.
+			} else if m, str := a.checkModes(a.config.Modes, event); m != nil {
+				a.mode = m
+				a.Status(str)
+				return nil
 			}
 		}
 
@@ -184,15 +181,8 @@ func (a *app) setup(dir string) {
 			return nil
 		} else {
 			// Check our binds...
-			for _, bind := range a.config.Binds {
-				if bind.Edict == "" {
-					continue
-				}
-				if (bind.Rune != "" && rune(bind.Rune[0]) == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
-					nr := a.cnode.GetReference().(types.FileReference)
-					a.RunEdict(bind.Edict, types.EdictContext{Selected: nr.Path})
-					return nil
-				}
+			if a.checkBinds(registry.PluginBinds, event) || a.checkBinds(a.config.Binds, event) {
+				return nil
 			}
 		}
 		return event
@@ -708,6 +698,36 @@ func (a *app) setRoot(dir string) {
 	}
 
 	a.location.SetText(filepath.Base(absdir))
+}
+
+func (a *app) checkModes(modes types.Modes, event *tcell.EventKey) (*types.Mode, string) {
+	for k, m := range modes {
+		if rune(m.Rune[0]) == event.Rune() {
+			var str string
+			for i, v := range m.Binds {
+				str += fmt.Sprintf("%s %v", v.Rune, v.Arguments)
+				if i != len(m.Binds)-1 {
+					str += " | "
+				}
+			}
+			return &m, fmt.Sprintf("MODE: %s > %s", k, str)
+		}
+	}
+	return nil, ""
+}
+
+func (a *app) checkBinds(binds types.Binds, event *tcell.EventKey) bool {
+	for _, bind := range binds {
+		if bind.Edict == "" {
+			continue
+		}
+		if (bind.Rune != "" && rune(bind.Rune[0]) == event.Rune()) || (bind.Key != 0 && bind.Key == int(event.Key())) {
+			nr := a.cnode.GetReference().(types.FileReference)
+			a.RunEdict(bind.Edict, types.EdictContext{Selected: nr.Path})
+			return true
+		}
+	}
+	return false
 }
 
 func (a *app) RefreshTree() {

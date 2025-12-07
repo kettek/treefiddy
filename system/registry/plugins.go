@@ -1,6 +1,10 @@
 package registry
 
-import "maps"
+import (
+	"maps"
+
+	"github.com/kettek/treefiddy/types"
+)
 
 func RefreshPluginFuncs() {
 	PluginOnTreeRefreshFuncs = nil
@@ -8,6 +12,8 @@ func RefreshPluginFuncs() {
 	PluginTreeSortFuncs = nil
 	PluginTreeFilterFuncs = nil
 	PluginEdicts = make(map[string]EdictFunc)
+	PluginModes = make(types.Modes)
+	PluginBinds = nil
 
 	for _, system := range systems {
 		for _, plugin := range system.Plugins() {
@@ -26,6 +32,12 @@ func RefreshPluginFuncs() {
 			if plugin.Edicts != nil {
 				maps.Copy(PluginEdicts, plugin.Edicts)
 			}
+			if plugin.Config.Modes != nil {
+				maps.Copy(PluginModes, plugin.Config.Modes)
+			}
+			if plugin.Config.Binds != nil {
+				PluginBinds = append(PluginBinds, plugin.Config.Binds...)
+			}
 		}
 	}
 }
@@ -36,4 +48,6 @@ var (
 	PluginTreeSortFuncs       []TreeSortFunc
 	PluginTreeFilterFuncs     []TreeFilterFunc
 	PluginEdicts              map[string]EdictFunc
+	PluginModes               types.Modes
+	PluginBinds               types.Binds
 )
