@@ -245,9 +245,6 @@ func (a *app) setup(dir string) {
 			return
 		}
 		entries = fuzzy.FindFold(a.cmd.GetText(), append(edictNames, registry.PluginEdictNames...))
-		if len(entries) <= 1 {
-			return nil
-		}
 		return
 	})
 	a.cmd.SetAutocompletedFunc(func(text string, index, source int) bool {
