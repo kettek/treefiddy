@@ -12,6 +12,7 @@ func RefreshPluginFuncs() {
 	PluginTreeSortFuncs = nil
 	PluginTreeFilterFuncs = nil
 	PluginEdicts = make(map[string]EdictFunc)
+	PluginEdictNames = nil
 	PluginModes = make(types.Modes)
 	PluginBinds = nil
 
@@ -31,6 +32,9 @@ func RefreshPluginFuncs() {
 			}
 			if plugin.Edicts != nil {
 				maps.Copy(PluginEdicts, plugin.Edicts)
+				for k := range plugin.Edicts {
+					PluginEdictNames = append(PluginEdictNames, k)
+				}
 			}
 			if plugin.Config.Modes != nil {
 				maps.Copy(PluginModes, plugin.Config.Modes)
@@ -48,6 +52,7 @@ var (
 	PluginTreeSortFuncs       []TreeSortFunc
 	PluginTreeFilterFuncs     []TreeFilterFunc
 	PluginEdicts              map[string]EdictFunc
+	PluginEdictNames          []string
 	PluginModes               types.Modes
 	PluginBinds               types.Binds
 )

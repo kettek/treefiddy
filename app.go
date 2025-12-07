@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lithammer/fuzzysearch/fuzzy"
+
 	"github.com/gdamore/tcell/v2"
 	_ "github.com/kettek/treefiddy/system/js"
 	"github.com/kettek/treefiddy/system/registry"
@@ -237,6 +239,22 @@ func (a *app) setup(dir string) {
 			a.ClearStatus()
 		}
 		return event
+	})
+	a.cmd.SetAutocompleteFunc(func(currentText string) (entries []string) {
+		if len(currentText) == 0 {
+			return
+		}
+		entries = fuzzy.FindFold(a.cmd.GetText(), append(edictNames, registry.PluginEdictNames...))
+		if len(entries) <= 1 {
+			return nil
+		}
+		return
+	})
+	a.cmd.SetAutocompletedFunc(func(text string, index, source int) bool {
+		if source != tview.AutocompletedNavigate {
+			a.cmd.SetText(text)
+		}
+		return source == tview.AutocompletedEnter || source == tview.AutocompletedClick
 	})
 
 	// Global Functionality

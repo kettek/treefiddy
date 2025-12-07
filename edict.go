@@ -16,7 +16,10 @@ type Edict struct {
 	Run func(ctx types.EdictContext) types.EdictContext
 }
 
-var edicts map[string]Edict
+var (
+	edicts     map[string]Edict
+	edictNames []string
+)
 
 func init() {
 	edicts = make(map[string]Edict)
@@ -24,6 +27,7 @@ func init() {
 
 func RegisterEdict(name string, e Edict) {
 	edicts[name] = e
+	edictNames = append(edictNames, name)
 }
 
 func HasEdict(name string) bool {
