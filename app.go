@@ -310,23 +310,31 @@ func (a *app) setup(dir string) {
 	})
 	RegisterEdict("plugin", Edict{
 		Run: func(ctx types.EdictContext) types.EdictContext {
-			if len(ctx.Arguments) < 2 {
-				return ctx
-			}
-			switch ctx.Arguments[0] {
-			case "save":
-				var err error
-				found := false
-				for _, system := range registry.Systems() {
-					if err = system.WritePluginConfig(ctx.Arguments[1]); err == nil {
-						found = true
-						break
+			if len(ctx.Arguments) == 1 {
+				switch ctx.Arguments[0] {
+				case "list":
+					var str string
+					for _, system := range registry.Systems() {
+						str += strings.Join(system.PluginNames(), ", ")
 					}
+					ctx.Msg = str
 				}
-				if found {
-					a.Status(fmt.Sprintf("saved %s", ctx.Arguments[0]))
-				} else {
-					a.Status(err.Error())
+			} else if len(ctx.Arguments) == 2 {
+				switch ctx.Arguments[0] {
+				case "save":
+					var err error
+					found := false
+					for _, system := range registry.Systems() {
+						if err = system.WritePluginConfig(ctx.Arguments[1]); err == nil {
+							found = true
+							break
+						}
+					}
+					if found {
+						ctx.Msg = fmt.Sprintf("saved %s", ctx.Arguments[1])
+					} else {
+						ctx.Msg = err.Error()
+					}
 				}
 			}
 			return ctx
